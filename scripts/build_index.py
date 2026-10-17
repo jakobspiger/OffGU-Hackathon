@@ -76,6 +76,7 @@ def _retrieval_mode(settings: Settings) -> str:
 
     return "vector" if settings.afs_embedding_model else "lexical"
 
+
 S02_NOTES_PATH = PROJECT_ROOT / "data" / "source_notes" / "s02_notes.yaml"
 
 
@@ -131,9 +132,7 @@ def _validate_evidence_file(path: str) -> int:
     return count
 
 
-def _build_embeddings(
-    evidence: list, out_dir: str, settings: Settings
-) -> dict:
+def _build_embeddings(evidence: list, out_dir: str, settings: Settings) -> dict:
     """Vector mode only: embed each Evidence text and persist the vectors.
 
     Writes ``embeddings.jsonl`` (one ``{evidence_id, vector}`` line per record)

@@ -8,9 +8,8 @@ import pytest
 
 pytest.importorskip("pydantic", reason="pydantic is provided by `uv sync --locked`")
 
-from tests.conftest import MATERIALS_DIR  # noqa: E402
-
 from src.knowledge import catalog, ingest  # noqa: E402
+from tests.conftest import MATERIALS_DIR  # noqa: E402
 
 
 def test_catalog_reports_missing_and_present(tmp_path):

@@ -300,7 +300,7 @@ def _get_index(settings: Any) -> _IndexCache:
 # ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
-def retrieve(query: str, k: int = 8) -> list["Evidence"]:
+def retrieve(query: str, k: int = 8) -> list[Evidence]:
     """Return the top-``k`` Evidence for ``query``, ranked by descending score.
 
     Input validation (unchanged from the T01 stub): ``query`` must be a

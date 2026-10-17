@@ -32,7 +32,7 @@ if TYPE_CHECKING:  # pragma: no cover - import guard for type checkers only
     from src.config import Settings
 
 
-def _require_embedding_config(settings: "Settings") -> tuple[str, str, str]:
+def _require_embedding_config(settings: Settings) -> tuple[str, str, str]:
     """Return ``(base, model, key)`` or raise a sanitized RetrievalError.
 
     The embedding path needs an OpenAI-compatible endpoint: an embedding model
@@ -53,9 +53,9 @@ def _require_embedding_config(settings: "Settings") -> tuple[str, str, str]:
 
 def embed_texts(
     texts: list[str],
-    settings: "Settings",
+    settings: Settings,
     *,
-    transport: "httpx.BaseTransport | None" = None,
+    transport: httpx.BaseTransport | None = None,
 ) -> list[list[float]]:
     """Embed ``texts`` via an OpenAI-compatible ``/embeddings`` endpoint.
 
@@ -107,7 +107,7 @@ def embed_texts(
     raise RetrievalError(last_error)
 
 
-def _parse_embeddings(response: "httpx.Response", *, expected: int) -> list[list[float]]:
+def _parse_embeddings(response: httpx.Response, *, expected: int) -> list[list[float]]:
     """Extract vectors from an OpenAI-compatible embeddings envelope.
 
     The envelope is ``{"data": [{"index": i, "embedding": [...]}, ...]}``.

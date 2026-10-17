@@ -204,7 +204,9 @@ def _real_settings(tmp_path, monkeypatch, embedding_model=None):
     reset_cache()
     index_dir = tmp_path / "index"
     index_dir.mkdir()
-    settings = Settings(_env_file=None, afs_index_dir=index_dir, afs_embedding_model=embedding_model)
+    settings = Settings(
+        _env_file=None, afs_index_dir=index_dir, afs_embedding_model=embedding_model
+    )
     monkeypatch.setattr("src.config.Settings", lambda *a, **kw: settings)
     return settings, index_dir
 
@@ -332,7 +334,15 @@ def test_retrieve_never_returns_reference_or_h_text(tmp_path, monkeypatch):
     _write_real_evidence(index_dir)
     # Plant decoys in files retrieve must ignore.
     with open(os.path.join(str(index_dir), "reference_records.jsonl"), "w", encoding="utf-8") as fh:
-        fh.write(json.dumps({"record_id": "BRIEF-p01", "source_id": "BRIEF", "text": "NIR MIR powder DOCX development reference"}))
+        fh.write(
+            json.dumps(
+                {
+                    "record_id": "BRIEF-p01",
+                    "source_id": "BRIEF",
+                    "text": "NIR MIR powder DOCX development reference",
+                }
+            )
+        )
         fh.write("\n")
     with open(os.path.join(str(index_dir), "h_scenarios.txt"), "w", encoding="utf-8") as fh:
         fh.write("H01 NIR MIR powder final scenario\n")
@@ -423,7 +433,9 @@ def test_vector_mode_uses_embeddings_via_mock_transport(tmp_path, monkeypatch):
     }
     with open(os.path.join(str(index_dir), "embeddings.jsonl"), "w", encoding="utf-8") as fh:
         for rec in records:
-            fh.write(json.dumps({"evidence_id": rec.evidence_id, "vector": stored[rec.evidence_id]}))
+            fh.write(
+                json.dumps({"evidence_id": rec.evidence_id, "vector": stored[rec.evidence_id]})
+            )
             fh.write("\n")
 
     # Query embeds to the S04 direction.
