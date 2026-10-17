@@ -15,6 +15,10 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+# Paths are anchored on the project root (same value as src.config.PROJECT_ROOT
+# and the Settings() defaults afs_source_dir / afs_index_dir). We derive them
+# here without importing src.config so the pure-logic tests can run even when
+# pydantic is not installed in the sandbox.
 MATERIALS_DIR = os.path.join(_ROOT, "materials")
 S02_NOTES_PATH = os.path.join(_ROOT, "data", "source_notes", "s02_notes.yaml")
 H_SCENARIOS_PATH = os.path.join(

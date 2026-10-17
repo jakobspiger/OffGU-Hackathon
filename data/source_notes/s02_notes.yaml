@@ -22,15 +22,20 @@
 #   PyMuPDF / a vision-capable pass could not run in the authoring sandbox
 #   (PyPI blocked). Kevin must do a FINAL VISUAL CHECK of the rendered slides
 #   6 and 13-16 against these notes before relying on them, and correct any
-#   wording that the slide images contradict. Until then each note is marked
-#   as a reviewed transcription from the source catalogue, not a verbatim read
-#   of the slide image.
+#   wording that the slide images contradict.
+#
+# REVIEW STATUS (shared T01 contract)
+#   Each note below is ingested with review_status="pending_visual_check" and a
+#   documented review_note. Review is proven ONLY by the status field plus a
+#   review_note, never by a text prefix or the old "verified_note" name. A note
+#   may become review_status="reviewed" only after Kevin's local visual check,
+#   recording reviewer/date/method in its review_note.
 
 meta:
   source_id: S02
-  kind: verified_note
-  provenance: "reviewed transcription from AFS source catalogue (DOCX section 4); pending final visual check of rendered slides"
-  needs_visual_check: true
+  kind: curated_note
+  review_status: pending_visual_check
+  review_note: "pending visual check; reviewer=tbd; method=rendered-slide vs source-catalog"
 
 notes:
   - page: 6

@@ -1,40 +1,40 @@
-"""Data types for AFS evidence and the source catalog.
+"""Shared contract types for AFS ingestion (re-export from ``src.models``).
 
 T01 interface note
 ------------------
-T01 (project foundations) will later centralise the ``Evidence`` type in
-``src/models.py``. This module is intentionally additive and kept compatible
-with the master-prompt contract::
+T01 (project foundations) centralises the data contract in ``src/models.py``.
+Per the binding handover (``docs/t02-handover.md``) this module must NOT define
+a second ``Evidence`` model or a stdlib dataclass fallback: it only re-exports
+the shared contract types. Pydantic is an installed production dependency
+(``pyproject.toml`` / ``uv.lock``).
 
-    class Evidence(BaseModel):
-        source_id: str
-        page: int | None = None
-        text: str
-        score: float | None = None
-
-We add two non-breaking fields, ``kind`` and ``chunk_id``, which T01/T04 can
-either adopt or ignore. When T01 lands, ``Evidence`` here should be replaced by
-an import from ``src.models`` and the extra fields folded into that definition.
-
-Pydantic is the production dependency (see requirements.txt). In environments
-where pydantic is not installed (e.g. the offline sandbox used to author this
-ticket), the module degrades to a small stdlib dataclass implementation that
-exposes the same construction signature and a ``model_dump()`` method, so the
-ingestion logic and tests run without the heavyweight dependency.
+The old T02 ``SourceKind`` enum may survive INTERNALLY as a migration aid, but
+it never leaves this package untranslated: :data:`KIND_PURPOSE_BY_SOURCE_KIND`
+maps every historical kind to the shared contract ``(kind, purpose)`` values
+before any record is constructed. Output always carries the contract values
+(``pdf`` / ``curated_note`` / ``text`` / ``table_transcription`` and
+``technical`` / ``research`` / ``business_context``).
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
+
+from src.models import (
+    Evidence,
+    ReferenceRecord,
+    SourceCatalogEntry,
+    SourceReference,
+)
 
 
 class SourceKind(str, Enum):
-    """How a piece of evidence relates to the primary AFS material.
+    """Historical T02 kinds, kept as an internal migration aid only.
 
-    Keeping these separated is a hard requirement of the ticket: primary PDF
-    text, hand-verified slide notes, the spreadsheet transcription, the
-    development reference (D01-D08) and business context must never be conflated.
+    These values never appear in output. They are translated to the shared
+    contract ``(kind, purpose)`` via :data:`KIND_PURPOSE_BY_SOURCE_KIND` before
+    any :class:`Evidence` / :class:`ReferenceRecord` is built.
     """
 
     pdf_text = "pdf_text"
@@ -44,101 +44,32 @@ class SourceKind(str, Enum):
     business_context = "business_context"
 
 
-try:  # Production path: pydantic is pinned in requirements.txt.
-    from pydantic import BaseModel, Field
-
-    _HAVE_PYDANTIC = True
-
-    class Evidence(BaseModel):
-        """A single, citable evidence record.
-
-        Contract fields (``source_id``, ``page``, ``text``, ``score``) match the
-        master prompt. ``kind`` and ``chunk_id`` are additive.
-        """
-
-        source_id: str
-        page: Optional[int] = None
-        text: str
-        kind: SourceKind
-        chunk_id: str
-        score: Optional[float] = None
-
-    class SourceCatalogEntry(BaseModel):
-        """A verified catalog entry describing one input material."""
-
-        source_id: str
-        filename: str
-        present: bool
-        kind: SourceKind
-        rank: str
-        pages: Optional[str] = None
-        description: str = ""
-        citation_hint: str = ""
-
-except ImportError:  # pragma: no cover - exercised only without pydantic
-    _HAVE_PYDANTIC = False
-
-    from dataclasses import asdict, dataclass, field
-
-    def Field(default=None, **_kwargs):  # type: ignore[no-redef]
-        return default
-
-    def _coerce_kind(value: Any) -> SourceKind:
-        return value if isinstance(value, SourceKind) else SourceKind(value)
-
-    @dataclass
-    class Evidence:  # type: ignore[no-redef]
-        """stdlib fallback mirroring the pydantic ``Evidence`` model."""
-
-        source_id: str
-        text: str
-        kind: SourceKind
-        chunk_id: str
-        page: Optional[int] = None
-        score: Optional[float] = None
-
-        def __post_init__(self) -> None:
-            self.kind = _coerce_kind(self.kind)
-
-        def model_dump(self) -> dict[str, Any]:
-            data = asdict(self)
-            data["kind"] = self.kind.value
-            return data
-
-    @dataclass
-    class SourceCatalogEntry:  # type: ignore[no-redef]
-        """stdlib fallback mirroring the pydantic ``SourceCatalogEntry`` model."""
-
-        source_id: str
-        filename: str
-        present: bool
-        kind: SourceKind
-        rank: str
-        pages: Optional[str] = None
-        description: str = ""
-        citation_hint: str = ""
-
-        def __post_init__(self) -> None:
-            self.kind = _coerce_kind(self.kind)
-
-        def model_dump(self) -> dict[str, Any]:
-            data = asdict(self)
-            data["kind"] = self.kind.value
-            return data
+# Internal mapping: historical kind -> shared contract (kind, purpose).
+# ``purpose`` is intentionally ``None`` where it depends on the concrete source
+# (e.g. S01 technical vs. S03/S04 research); callers resolve it explicitly.
+KIND_PURPOSE_BY_SOURCE_KIND: dict[SourceKind, tuple[str, str | None]] = {
+    SourceKind.pdf_text: ("pdf", None),
+    SourceKind.verified_note: ("curated_note", None),
+    SourceKind.table_transcription: ("table_transcription", "technical"),
+    SourceKind.business_context: ("curated_note", "business_context"),
+    # dev_reference no longer maps to Evidence at all: BRIEF/DOCX become
+    # ReferenceRecord. Kept here only so the enum stays exhaustive.
+    SourceKind.dev_reference: ("reference", None),
+}
 
 
 def to_dict(model: Any) -> dict[str, Any]:
-    """Return a plain JSON-serialisable dict for an Evidence/catalog model.
-
-    Works with both the pydantic models and the dataclass fallback.
-    """
+    """Return a plain JSON-serialisable dict for a contract model."""
 
     return model.model_dump()
 
 
 __all__ = [
-    "SourceKind",
     "Evidence",
+    "SourceReference",
+    "ReferenceRecord",
     "SourceCatalogEntry",
+    "SourceKind",
+    "KIND_PURPOSE_BY_SOURCE_KIND",
     "to_dict",
 ]

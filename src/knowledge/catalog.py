@@ -21,18 +21,21 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from .types import SourceCatalogEntry, SourceKind
+from .types import SourceCatalogEntry
 
 # ---------------------------------------------------------------------------
 # Verified catalog metadata (DOCX section 4 + section 5). Keyed by source_id.
-# Each tuple: (filename, kind, rank, pages, description, citation_hint)
+# ``kind`` carries a free-text inventory label (the contract models it as Text):
+# "pdf" for primary/research PDFs and the BRIEF, "curated_note" for the
+# image-heavy S02 slides and the S05 flyer, "text" for the S06 link,
+# "table_transcription" for the XLSX, and "reference" for the DOCX.
 # ---------------------------------------------------------------------------
 _CATALOG: list[SourceCatalogEntry] = [
     SourceCatalogEntry(
         source_id="BRIEF",
         filename="AI-based molecular media analysis by process-spectroscopy in-line.pdf",
         present=False,
-        kind=SourceKind.pdf_text,
+        kind="pdf",
         rank="task_definition",
         pages="1-2",
         description=(
@@ -46,7 +49,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="S01",
         filename="S01_Multispectral_Laboratory.pdf",
         present=False,
-        kind=SourceKind.pdf_text,
+        kind="pdf",
         rank="primary_technical",
         pages="1-19",
         description=(
@@ -61,7 +64,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="S02",
         filename="S02_AFS_Process_Control_Slides.pdf",
         present=False,
-        kind=SourceKind.verified_note,
+        kind="curated_note",
         rank="application_hardware_context",
         pages="1-20",
         description=(
@@ -77,7 +80,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="S03",
         filename="S03_LED_Kidney_Study_2017.pdf",
         present=False,
-        kind=SourceKind.pdf_text,
+        kind="pdf",
         rank="research_proof_of_concept",
         pages=None,
         description=(
@@ -91,7 +94,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="S04",
         filename="S04_Combi_MIR_Fluorescence_2021.pdf",
         present=False,
-        kind=SourceKind.pdf_text,
+        kind="pdf",
         rank="research_proof_of_concept",
         pages=None,
         description=(
@@ -104,7 +107,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="S05",
         filename="S05_AFS_Flyer.pdf",
         present=False,
-        kind=SourceKind.business_context,
+        kind="curated_note",
         rank="business_context",
         pages="1-2",
         description=(
@@ -117,7 +120,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="S06",
         filename="S06_Laboratory_Link.txt",
         present=False,
-        kind=SourceKind.business_context,
+        kind="text",
         rank="business_context",
         pages=None,
         description=(
@@ -131,7 +134,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="XLSX",
         filename="AFS_method_comparison_table.xlsx",
         present=False,
-        kind=SourceKind.table_transcription,
+        kind="table_transcription",
         rank="primary_technical",
         pages="6",
         description=(
@@ -147,7 +150,7 @@ _CATALOG: list[SourceCatalogEntry] = [
         source_id="DOCX",
         filename="AFS_Examples_and_Reference.docx",
         present=False,
-        kind=SourceKind.dev_reference,
+        kind="reference",
         rank="development_reference",
         pages=None,
         description=(
