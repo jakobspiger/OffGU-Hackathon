@@ -26,6 +26,30 @@ Kein API-Key für Tests und Startbildschirm nötig. Für Jakobs bereits lokal vo
 
 Wir verwalten Aufgaben direkt als Markdown-Dateien im Ordner [tickets/](tickets/README.md). GitHub-Issues, GitHub CLI und ein Projects-Board sind für unsere Zusammenarbeit nicht erforderlich.
 
+## Wissensindex bauen (T02)
+
+Der Quellen-Index wird deterministisch aus dem versionierten Ordner `materials/` erzeugt. `materials/` ist Teil des Repositorys und wird **nicht** ignoriert. Abhängigkeiten (PyMuPDF, python-docx, openpyxl, PyYAML, Pydantic) stammen ausschließlich aus `pyproject.toml` / `uv.lock`; es gibt keine `requirements.txt` mehr. Installation daher nur über `uv`:
+
+```powershell
+uv sync --locked
+uv run python scripts/build_index.py
+```
+
+Ohne Argumente nutzt das Skript die Defaults aus `Settings()` (`afs_source_dir` und `afs_index_dir`). Explizite Argumente überschreiben sie:
+
+```powershell
+uv run python scripts/build_index.py --materials materials --out data/index
+```
+
+Das Skript schreibt vier Artefakte in den Ausgabeordner:
+
+- `evidence.jsonl` — echte, zitierbare Evidenz (S01–S04 Seitentext, S02-Notizen, XLSX-Transkription, S05/S06 Business-Kontext), eine JSON-Zeile je Datensatz, sortiert nach `evidence_id`. Jede Zeile wird mit `Evidence.model_validate_json` gegen den Vertrag geprüft; ein Fehlschlag bricht den Build ab.
+- `reference_records.jsonl` — Challenge-Brief (BRIEF) und Entwicklungsreferenz (DOCX) als `ReferenceRecord`, bewusst getrennt von der Evidenz (ersetzt das frühere `dev_reference.jsonl`).
+- `catalog.json` — das Quelleninventar mit Vorhanden-/Fehlend-Status.
+- `manifest.json` — UTC-Zeitstempel, Quelldateien mit Größe und SHA-256, Bibliotheksversionen, Zähler. Keine Secrets.
+
+Jeder Evidenz-Datensatz trägt die gemeinsamen Vertragsfelder aus `src/models.py`: `evidence_id` (stabile ID, z. B. `S01-p010`, `XLSX-row03`, `S02-note-p13`), `source_id`, `page`, `origin_source_id`, `text`, `kind` (`pdf` / `curated_note` / `table_transcription` / `text`), `purpose` (`technical` / `research` / `business_context`) und `review_status` (`unreviewed` / `pending_visual_check` / `reviewed`). Die S02-Notizen bleiben `pending_visual_check` mit dokumentierter `review_note`, bis Kevin die gerenderten Folien visuell gegengeprüft hat; ein Textpräfix oder Name ist kein Prüfnachweis. BRIEF und DOCX sind keine wissenschaftliche Evidenz und erscheinen nie in `evidence.jsonl`; H01–H06 bleiben vollständig ausgeschlossen.
+
 ## Geplantes Ergebnis
 
 - Genannte Fakten, Annahmen und unbekannte Angaben getrennt darstellen.
