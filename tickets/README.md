@@ -10,7 +10,25 @@ Die Dateien T01.md bis T15.md enthalten importierbare Issue-Beschreibungen. Ein 
 4. T11 Orchestrierung und T12 UI früh mit vereinbarten Fixtures beginnen, anschließend vollständig integrieren.
 5. T13 Entwicklungsevaluation, T14 finaler Batch, T15 Abgabe.
 
-Die T-IDs sind lokale Planungskennungen, keine GitHub-Issue-Nummern. Abhängigkeiten stehen im jeweiligen Ticket. Verantwortliche werden im Team zugewiesen.
+Die T-IDs sind lokale Planungskennungen, keine GitHub-Issue-Nummern. Abhängigkeiten, Verantwortliche und konkrete Kollisionsrisiken stehen im jeweiligen Ticket.
+
+## Aufteilung zwischen Kevin und Jakob
+
+| Verantwortlich | Tickets | Bereich |
+|---|---|---|
+| Kevin | T02, T03, T04, T05, T10, T13 | Wissen, Regeln, Retrieval, Beispiele, Gate, Evaluation |
+| Jakob | T01, T06, T07, T08, T09, T11, T12, T14 | Schnittstellen, Analyse, Orchestrierung, UI, finaler Batch |
+| Jakob federführend; Kevin unterstützt | T15 | Integration und Abgabe |
+
+Jakob pflegt gemeinsame Modelle, Graph-State, Konfiguration, Abhängigkeiten und README. Kevin pflegt Wissensmodule, Daten, Indexbau sowie ausdrücklich auch `src/engine/validators.py` und `scripts/check_citations.py`. Die übrigen Engine-Dateien gehören Jakob. Änderungen außerhalb des eigenen Bereichs vorab abstimmen.
+
+Jeder schreibt Modultests für seinen Bereich in getrennten Dateien. Kevin betreut zusätzlich die übergreifende Evaluation. Gemeinsame Test-Fixtures wie `conftest.py` nur nach Absprache durch eine Person ändern.
+
+Vor dem parallelen Start gemeinsam Evidence, Extraktionsergebnis, Regel- und Validierungsbefunde sowie Funktionssignaturen festlegen. Mit vereinbarten Testdaten kann die Umsetzung vor Fertigstellung aller Abhängigkeiten beginnen. Keine direkten Dateikonflikte bedeutet nicht, dass keine Integrationsabstimmung nötig ist.
+
+Ohne CI: pro Ticket ein Branch, kleine Pull Requests, gegenseitige Prüfung, betroffene Tests lokal vor dem Merge und gemeinsamer Smoke-Test nach Integration. T02 und T04 ändern beide den Indexbau und werden von Kevin aufeinander aufbauend integriert.
+
+Die Namen in den Tickets sind textliche Zuständigkeiten. GitHub-Assignees werden vom Importskript nicht gesetzt. Bereits veröffentlichte Issues werden durch Änderungen dieser Dateien oder erneuten Import nicht aktualisiert.
 
 ## Echte GitHub-Issues erstellen
 
