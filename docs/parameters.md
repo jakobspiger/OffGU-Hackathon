@@ -44,7 +44,9 @@ Nur Parameternamen, Semantik und Typvalidierung sind umgesetzt. Noch kein Extrak
 Der zweite T06-Schritt ergänzt den eigentlichen Extraktor (`src/engine/extraction.py`,
 `src/engine/provider.py`). Dabei wächst der gemeinsame Vertrag in `src/models.py`
 rückwärtskompatibel; alle neuen Felder haben Defaults. Für Kevins Regelbau (T03)
-gilt die ausführliche [Übergabe T06 → Kevin](t06-handover-an-kevin.md).
+gilt die ausführliche [Übergabe T06 → Kevin](t06-handover-an-kevin.md). Datenfluss,
+Fehlertypen und eine Symptom-Ursache-Tabelle stehen in der
+[technischen Referenz & Fehlerdiagnose](t06-extraction-reference.md).
 
 - **`ExtractedFact.numeric_value: NumericValue | None`** — optionaler, exakt
   geparster Skalar mit expliziter Einheit (`°C`, `K`, `bar(a)`, `bar(g)`, `s`,
