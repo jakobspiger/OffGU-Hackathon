@@ -1,6 +1,8 @@
 # Architektur-Tickets
 
-Die Dateien T01.md bis T15.md enthalten importierbare Issue-Beschreibungen. Ein Git-Push veröffentlicht diese Dateien, erzeugt aber keine GitHub-Issues.
+Die Dateien T01.md bis T15.md sind unser aktives Aufgabenboard im Repository. Wir arbeiten direkt mit diesen lokalen Tickets; GitHub-Issues und GitHub CLI sind nicht erforderlich. Ein Git-Push veröffentlicht die Ticketdateien.
+
+Für die Bearbeitung einen Ticket-Branch erstellen, das Ticket im Pull Request über seinen Dateipfad verlinken und erfüllte Abnahmekriterien nach Prüfung abhaken. Hinweise auf `Closes #<Issue-Nummer>` in den Ticketvorlagen gelten ausschließlich für einen optionalen späteren GitHub-Issue-Import.
 
 ## Reihenfolge
 
@@ -30,7 +32,9 @@ Ohne CI: pro Ticket ein Branch, kleine Pull Requests, gegenseitige Prüfung, bet
 
 Die Namen in den Tickets sind textliche Zuständigkeiten. GitHub-Assignees werden vom Importskript nicht gesetzt. Bereits veröffentlichte Issues werden durch Änderungen dieser Dateien oder erneuten Import nicht aktualisiert.
 
-## Echte GitHub-Issues erstellen
+## Optional: Echte GitHub-Issues erstellen
+
+Dieser Abschnitt ist nur für einen späteren Wechsel zu GitHub-Issues gedacht. Das Skript wird im aktuellen Teamablauf nicht benötigt.
 
 Voraussetzung: GitHub CLI (https://cli.github.com/) und Schreibzugriff auf das Zielrepository. Unter Windows kann die CLI beispielsweise mit `winget install --id GitHub.cli --exact` installiert werden. Danach gegebenenfalls ein neues Terminal öffnen.
 
