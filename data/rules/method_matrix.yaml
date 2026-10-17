@@ -1,0 +1,78 @@
+# Sample-type -> measurement-geometry candidates derived from the method
+# comparison table (S01 Table 1, p.6; ingested as the XLSX transcription).
+#
+# These are CONDITIONAL hints, never clearances: they point at a plausible
+# measurement geometry for a stated sample form and always demand verification.
+# The qualitative sensitivity/selectivity/cost ratings from the table
+# (low/average/high) are only ever referenced as qualitative words in `reason`;
+# they are NEVER turned into numbers or device specifications.
+#
+# Every condition predicate runs on the raw quote text (`value`) of a stated
+# fact, case-insensitively. No numeric comparison happens here.
+rules:
+  - rule_id: matrix_clear_liquid_transmission_geometry
+    when:
+      - parameter: matrix
+        predicate: value_contains_any
+        keywords: ["clear", "transparent", "klar", "durchsichtig"]
+    requires: [matrix]
+    outcome: conditional
+    reason: >-
+      A clear/transparent liquid points toward a transmission geometry
+      (cuvette/transmission probe) rather than diffuse reflection, per the
+      method comparison table. This is a qualitative geometry hint only; the
+      actual optical path, sample type and method must still be verified. The
+      table's sensitivity/selectivity/cost columns are qualitative ratings, not
+      measured specifications.
+    source_refs:
+      - source_id: S01
+        page: 6
+
+  - rule_id: matrix_turbid_liquid_reflection_geometry
+    when:
+      - parameter: matrix
+        predicate: value_contains_any
+        keywords: ["turbid", "cloudy", "scattering", "suspension", "trüb", "streuend"]
+    requires: [matrix]
+    outcome: conditional
+    reason: >-
+      A turbid/scattering liquid or suspension points toward a diffuse
+      reflection / transflection geometry rather than straight transmission,
+      per the method comparison table. This is a qualitative geometry hint only
+      and must be verified against the real sample and path length. Ratings in
+      the table are qualitative, never device specifications.
+    source_refs:
+      - source_id: S01
+        page: 6
+
+  - rule_id: matrix_powder_diffuse_reflection_geometry
+    when:
+      - parameter: matrix
+        predicate: value_contains_any
+        keywords: ["powder", "granulate", "pulver", "granulat"]
+    requires: [matrix]
+    outcome: conditional
+    reason: >-
+      A powder/granulate points toward a diffuse reflection geometry
+      (reflection probe or integrating sphere), per the method comparison
+      table. Qualitative geometry hint only; sample presentation and packing
+      density must be verified. Table ratings stay qualitative.
+    source_refs:
+      - source_id: S01
+        page: 6
+
+  - rule_id: matrix_solid_surface_reflection_geometry
+    when:
+      - parameter: matrix
+        predicate: value_contains_any
+        keywords: ["solid", "pill", "tablet", "film", "feststoff", "tablette"]
+    requires: [matrix]
+    outcome: conditional
+    reason: >-
+      A solid surface/film/pill points toward a surface or layer reflection
+      geometry rather than transmission, per the method comparison table.
+      Qualitative geometry hint only; verify against the real sample. Table
+      ratings (sensitivity/selectivity/cost) are qualitative, not numbers.
+    source_refs:
+      - source_id: S01
+        page: 6
