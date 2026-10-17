@@ -25,6 +25,10 @@ class ExtractionError(AnalysisError):
     """No valid grounded extraction could be obtained."""
 
 
+class SynthesisError(AnalysisError):
+    """No valid grounded synthesis result could be obtained."""
+
+
 class ProviderError(AnalysisError):
     """A sanitized provider failure; response bodies and credentials are omitted."""
 
