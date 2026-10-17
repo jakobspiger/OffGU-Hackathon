@@ -1,19 +1,20 @@
-# Python
+.venv/
+.tools/
+.uv-cache/
+.python/
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# Secrets / local config
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
 .env
-
-# Local AFS source material (redistribution rights unclear — keep local only)
+.env.*
+!.env.example
 data/source/
-
-# Built index artifacts (reproducible via scripts/build_index.py)
 data/index/
+data/examples/
+outputs/local/
