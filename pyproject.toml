@@ -1,0 +1,48 @@
+[project]
+name = "afs-spectroscopy-assistant"
+version = "0.1.0"
+description = "Evidence-grounded spectroscopy feasibility assistant"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "langgraph>=1,<2",
+  "streamlit>=1.40,<2",
+  "pymupdf>=1.24.10,<2",
+  "python-docx>=1.1.2,<2",
+  "openpyxl>=3.1.5,<4",
+  "pyyaml>=6,<7",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/", "tests/", "docs/", "app.py", "README.md", "pyproject.toml",
+  "uv.lock", ".python-version", ".env.example", ".gitignore",
+  "scripts/", "data/source_notes/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["materials", "tickets", "docs", ".tools", ".python", ".uv-cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.uv]
+required-version = ">=0.9"

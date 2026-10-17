@@ -6,7 +6,23 @@ Der geplante Assistent übersetzt natürlichsprachige industrielle Kundenanfrage
 
 ## Aktueller Stand
 
-Das Repository enthält die Projektplanung, Materialien und 15 Umsetzungstickets. Die Anwendung ist noch nicht implementiert; Installations-, Start- und Testbefehle werden mit der Umsetzung ergänzt. Der Einstieg ist [T01: Projektgrundlage und Schnittstellen](tickets/T01.md).
+T01 liefert das Projektfundament: reproduzierbares Python-Setup, Konfiguration, typisierte Datenverträge, LangGraph-State, Vertragstests und einen startbaren Streamlit-Startbildschirm. Die fachliche Analyse und das Retrieval sind noch nicht implementiert; ihre öffentlichen Einstiegspunkte melden dies ausdrücklich. Die weiteren Aufgaben stehen in den 15 lokalen Tickets.
+
+## Schnellstart
+
+Voraussetzung: [uv](https://docs.astral.sh/uv/getting-started/installation/). Im Repository-Hauptordner:
+
+```powershell
+uv sync --locked
+uv run --locked pytest -q
+uv run --locked streamlit run app.py
+```
+
+Kein API-Key für Tests und Startbildschirm nötig. Für Jakobs bereits lokal vorbereitete Werkzeuge sowie Konfiguration und Prüfkommandos siehe [Entwicklungsanleitung](docs/development.md).
+
+- [Technischer Deepdive und Architekturentscheidungen](docs/architecture.md)
+- [Datenverträge und Zuständigkeiten](docs/contracts.md)
+- [T02-Übergabe: Integration von Kevins bestehendem Branch](docs/t02-handover.md)
 
 Wir verwalten Aufgaben direkt als Markdown-Dateien im Ordner [tickets/](tickets/README.md). GitHub-Issues, GitHub CLI und ein Projects-Board sind für unsere Zusammenarbeit nicht erforderlich.
 
@@ -27,7 +43,7 @@ Wir verwalten Aufgaben direkt als Markdown-Dateien im Ordner [tickets/](tickets/
 3. **Wissensbasis und deterministischer Kern:** Regel-Matrix aus AFS-XLSX/S01, Vektor-Index der Quellen S01–S06 und getrennter Few-Shot-Speicher für Entwicklungsfälle D01–D08.
 4. **Verifikation und Ausgabe:** B7 Zitations- und Physik-Gate, Experten-Cockpit und Batch-Export.
 
-Geplant sind Python 3.11+, Streamlit, Pydantic, LangGraph, lokale Wissensartefakte und eine konfigurierbare OpenAI-kompatible Modell-API. Konkrete Abhängigkeiten und gemeinsame Schnittstellen werden in T01 festgelegt.
+Das Fundament verwendet Python 3.12 als Teamstandard, Streamlit, Pydantic und LangGraph. Direkte Abhängigkeiten stehen in `pyproject.toml`, aufgelöste Versionen in `uv.lock`. Lokale Wissensartefakte und eine konfigurierbare OpenAI-kompatible Modell-API werden in den Folgetickets angebunden.
 
 Die aktuelle Teamentscheidung für LangGraph, Vektor-Retrieval und Few-Shot-Speicher konkretisiert die früheren, schlankeren Vorschläge in Strategiepapier und Masterprompt. Für die Umsetzung dienen die Tickets als Arbeitsgrundlage.
 
@@ -36,6 +52,11 @@ Die aktuelle Teamentscheidung für LangGraph, Vektor-Retrieval und Few-Shot-Spei
 ```text
 OffGU-Hackathon/
 ├── README.md
+├── pyproject.toml / uv.lock    # Projekt und reproduzierbare Abhängigkeiten
+├── app.py                     # Startbildschirm, noch kein Analyse-Cockpit
+├── src/                       # Modelle, State, Konfiguration, Schnittstellen
+├── tests/                     # Lokale Fundament- und Vertragstests
+├── docs/                      # Setup, Architekturentscheidungen, Datenvertrag
 ├── materials/                 # Planungsunterlagen und bereitgestellte Materialien
 └── tickets/
     ├── README.md              # Reihenfolge, Zuständigkeiten und Zusammenarbeit
