@@ -9,6 +9,24 @@ Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 SourceID = Literal["S01", "S02", "S03", "S04", "S05", "S06"]
 CatalogSourceID = Literal["BRIEF", "S01", "S02", "S03", "S04", "S05", "S06", "XLSX", "DOCX"]
 DecisionStatus = Literal["provisional", "insufficient_information", "out_of_scope"]
+ParameterName = Literal[
+    "matrix",
+    "sample_composition",
+    "target_substance",
+    "target_quantity",
+    "target_range",
+    "temperature",
+    "pressure",
+    "flow_conditions",
+    "measurement_location",
+    "measurement_mode",
+    "existing_equipment",
+    "optical_access",
+    "required_accuracy",
+    "required_response_time",
+    "reference_method",
+    "process_constraints",
+]
 
 
 class ContractModel(BaseModel):
@@ -80,7 +98,7 @@ class ReferenceRecord(ContractModel):
 
 
 class ExtractedFact(ContractModel):
-    parameter: Text
+    parameter: ParameterName
     value: Text
     input_quote: Text
 

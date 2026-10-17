@@ -2,6 +2,8 @@
 
 Implementierung: `src/models.py`, `src/contracts.py`, `src/state.py`.
 
+T06-Schritt 1 konkretisiert `ExtractedFact.parameter` als `ParameterName` statt freiem Text. Die verbindliche Liste und ihre Bedeutung stehen in [parameters.md](parameters.md); Erzeuger und Regeln müssen diese Schlüssel verwenden.
+
 Für den bereits parallel entstandenen T02-Branch gilt die konkrete [Migrationsanleitung](t02-handover.md). Die hier dokumentierte Version 1.0 ist der erste veröffentlichte Vertrag; der frühere lokale Entwurf war noch nicht veröffentlicht.
 
 ## Öffentliche Aufrufe
