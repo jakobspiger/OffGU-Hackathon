@@ -17,10 +17,9 @@ import pytest
 
 pytest.importorskip("pydantic", reason="pydantic is provided by `uv sync --locked`")
 
-from tests.conftest import H_SCENARIOS_PATH, MATERIALS_DIR, S02_NOTES_PATH  # noqa: E402
-
 from src.knowledge import ingest  # noqa: E402
 from src.knowledge.types import Evidence, ReferenceRecord, to_dict  # noqa: E402
+from tests.conftest import H_SCENARIOS_PATH, MATERIALS_DIR, S02_NOTES_PATH  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

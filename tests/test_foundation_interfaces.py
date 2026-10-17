@@ -1,21 +1,57 @@
+import os
+
 import pytest
 from langgraph.graph import END, START, StateGraph
 from streamlit.testing.v1 import AppTest
 
-from src.config import PROJECT_ROOT
+from src.config import PROJECT_ROOT, Settings
 from src.engine.service import analyze
 from src.errors import ComponentNotReadyError, RetrievalError
-from src.knowledge.retrieval import retrieve
+from src.knowledge.retrieval import reset_cache, retrieve
 from src.state import PipelineState
 
 
-def test_public_stubs_do_not_fabricate_results():
+def _retrieve_against_empty_index(tmp_path, monkeypatch):
+    """Point retrieve() at an empty temp index and drop any cached index."""
+
+    empty = tmp_path / "index"
+    empty.mkdir()
+    reset_cache()
+    settings = Settings(_env_file=None, afs_index_dir=empty)
+    monkeypatch.setattr("src.config.Settings", lambda *a, **kw: settings)
+    return empty, settings
+
+
+def test_public_stubs_do_not_fabricate_results(tmp_path, monkeypatch):
     with pytest.raises(ComponentNotReadyError, match="T06-T11"):
         analyze("Synthetic new request")
-    # T04 is implemented: per docs/contracts.md a retrieve() run against a
-    # missing/broken index raises RetrievalError (no index is built here).
+    # T04 is implemented: a retrieve() against a missing index raises
+    # RetrievalError. The configured dir is empty; a gitignored
+    # data/index/evidence.jsonl must not count as that index.
+    _retrieve_against_empty_index(tmp_path, monkeypatch)
     with pytest.raises(RetrievalError):
         retrieve("Synthetic retrieval query")
+
+
+def test_retrieve_raises_when_configured_index_is_empty_even_if_workspace_index_exists(
+    tmp_path, monkeypatch
+):
+    workspace = PROJECT_ROOT / "data" / "index" / "evidence.jsonl"
+    stamp = workspace.stat().st_mtime_ns if workspace.is_file() else None
+    decoy = tmp_path / "decoy"
+    decoy.mkdir()
+    (decoy / "evidence.jsonl").write_text('{"not": "read"}\n', encoding="utf-8")
+
+    _empty, settings = _retrieve_against_empty_index(tmp_path, monkeypatch)
+    with pytest.raises(RetrievalError, match="not found") as exc:
+        retrieve("Synthetic retrieval query")
+
+    message = str(exc.value)
+    expected = os.path.join(str(settings.afs_index_dir), "evidence.jsonl")
+    assert repr(expected) in message
+    assert "decoy" not in message
+    if stamp is not None:
+        assert workspace.stat().st_mtime_ns == stamp
 
 
 @pytest.mark.parametrize("query", ["", "   ", None])

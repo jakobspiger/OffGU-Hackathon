@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from . import catalog
 from .types import Evidence, ReferenceRecord
@@ -315,7 +315,7 @@ def _parse_s02_notes_yaml(raw: str) -> dict[str, Any]:
         i += 1
 
     # --- notes list ---
-    current: Optional[dict[str, Any]] = None
+    current: dict[str, Any] | None = None
     while i < n:
         raw_line = lines[i]
         stripped = raw_line.strip()
@@ -372,7 +372,7 @@ def ingest_curated_s02_notes(
     if not os.path.isfile(notes_path):
         return []
 
-    with open(notes_path, "r", encoding="utf-8") as fh:
+    with open(notes_path, encoding="utf-8") as fh:
         data = _parse_s02_notes_yaml(fh.read())
 
     records: list[Evidence] = []
@@ -395,7 +395,7 @@ ingest_verified_s02_notes = ingest_curated_s02_notes
 # ---------------------------------------------------------------------------
 def _format_table_row(headers: list[str], values: list[Any]) -> str:
     pairs = []
-    for h, v in zip(headers, values):
+    for h, v in zip(headers, values, strict=False):
         if v is None or str(v).strip() == "":
             continue
         pairs.append(f"{h}={v}")
@@ -532,7 +532,7 @@ def ingest_business_context(
     url = S06_URL
     if s06_path and os.path.isfile(s06_path):
         try:
-            with open(s06_path, "r", encoding="utf-8") as fh:
+            with open(s06_path, encoding="utf-8") as fh:
                 content = fh.read().strip()
             if content:
                 url = content.splitlines()[0].strip()

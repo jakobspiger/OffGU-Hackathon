@@ -76,6 +76,7 @@ def _retrieval_mode(settings: Settings) -> str:
 
     return "vector" if settings.afs_embedding_model else "lexical"
 
+
 S02_NOTES_PATH = PROJECT_ROOT / "data" / "source_notes" / "s02_notes.yaml"
 
 
@@ -117,7 +118,7 @@ def _validate_evidence_file(path: str) -> int:
     """
 
     count = 0
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         for lineno, line in enumerate(fh, start=1):
             if not line.strip():
                 continue
@@ -131,9 +132,7 @@ def _validate_evidence_file(path: str) -> int:
     return count
 
 
-def _build_embeddings(
-    evidence: list, out_dir: str, settings: Settings
-) -> dict:
+def _build_embeddings(evidence: list, out_dir: str, settings: Settings) -> dict:
     """Vector mode only: embed each Evidence text and persist the vectors.
 
     Writes ``embeddings.jsonl`` (one ``{evidence_id, vector}`` line per record)
@@ -148,7 +147,7 @@ def _build_embeddings(
     vectors = embed_texts(texts, settings) if texts else []
     embeddings_path = os.path.join(out_dir, "embeddings.jsonl")
     with open(embeddings_path, "w", encoding="utf-8") as fh:
-        for rec, vector in zip(evidence, vectors):
+        for rec, vector in zip(evidence, vectors, strict=True):
             fh.write(
                 json.dumps(
                     {"evidence_id": rec.evidence_id, "vector": vector},
@@ -269,7 +268,7 @@ def build(materials_dir: str, out_dir: str, settings: Settings | None = None) ->
         "mode": mode,
         "model": embedding_info["model"],
         "dim": embedding_info["dim"],
-        "built_at_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "built_at_utc": _dt.datetime.now(_dt.UTC).isoformat(),
     }
     with open(os.path.join(out_dir, "embedding_meta.json"), "w", encoding="utf-8") as fh:
         json.dump(embedding_meta, fh, ensure_ascii=False, indent=2, sort_keys=True)
@@ -298,7 +297,7 @@ def build(materials_dir: str, out_dir: str, settings: Settings | None = None) ->
             )
 
     manifest = {
-        "built_at_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "built_at_utc": _dt.datetime.now(_dt.UTC).isoformat(),
         "materials_dir": materials_dir,
         "out_dir": out_dir,
         "retrieval_mode": mode,

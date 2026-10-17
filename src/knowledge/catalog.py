@@ -19,7 +19,6 @@ static metadata so downstream code can report the gap.
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from .types import SourceCatalogEntry
 
@@ -186,7 +185,7 @@ def source_catalog() -> list[SourceCatalogEntry]:
     ]
 
 
-def get_entry(source_id: str) -> Optional[SourceCatalogEntry]:
+def get_entry(source_id: str) -> SourceCatalogEntry | None:
     """Look up a single catalog entry by source_id, or None."""
 
     for entry in _CATALOG:
