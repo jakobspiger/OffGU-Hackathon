@@ -1,0 +1,26 @@
+# T03 rule-set metadata and the parameter-versioning gate.
+#
+# expected_parameter_names is a verbatim copy of the 16 ParameterName literals
+# defined by T06 in src/models.py (see docs/parameters.md). load_rules() checks
+# at runtime that this set equals typing.get_args(src.models.ParameterName) and
+# raises RuleConfigError otherwise, so the rules can never match silently
+# against an outdated parameter list.
+rule_set_version: "1.0"
+parameter_contract: "T06 ParameterName (docs/parameters.md)"
+expected_parameter_names:
+  - matrix
+  - sample_composition
+  - target_substance
+  - target_quantity
+  - target_range
+  - temperature
+  - pressure
+  - flow_conditions
+  - measurement_location
+  - measurement_mode
+  - existing_equipment
+  - optical_access
+  - required_accuracy
+  - required_response_time
+  - reference_method
+  - process_constraints
