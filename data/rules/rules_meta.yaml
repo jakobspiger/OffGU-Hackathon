@@ -1,11 +1,14 @@
 # T03 rule-set metadata and the parameter-versioning gate.
 #
-# expected_parameter_names is a verbatim copy of the 16 ParameterName literals
-# defined by T06 in src/models.py (see docs/parameters.md). load_rules() checks
-# at runtime that this set equals typing.get_args(src.models.ParameterName) and
-# raises RuleConfigError otherwise, so the rules can never match silently
-# against an outdated parameter list.
+# expected_parameter_version mirrors the module-level PARAMETER_VERSION marker
+# in src/models.py (introduced by T06). load_rules() checks at runtime that this
+# string equals src.models.PARAMETER_VERSION (the agreed versioning mechanism)
+# and, as a second content safeguard, that expected_parameter_names below equals
+# typing.get_args(src.models.ParameterName). Either mismatch raises
+# RuleConfigError, so the rules can never match silently against a drifted
+# parameter list.
 rule_set_version: "1.0"
+expected_parameter_version: "1.0"
 parameter_contract: "T06 ParameterName (docs/parameters.md)"
 expected_parameter_names:
   - matrix

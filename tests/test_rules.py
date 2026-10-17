@@ -10,6 +10,7 @@ maintainer's machine via ``uv run --locked pytest -q``.
 
 from __future__ import annotations
 
+import ast
 import inspect
 import os
 import re
@@ -28,6 +29,43 @@ from src.knowledge.rules import (
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_DIR = os.path.join(_ROOT, "data", "rules")
+_MODELS_PATH = os.path.join(_ROOT, "src", "models.py")
+
+
+def _module_parameter_version() -> str:
+    """Read the module-level ``PARAMETER_VERSION`` string from src/models.py.
+
+    Parsed out of the source via ``ast`` (mirroring tests/test_pure_logic_offline.py)
+    so this runs in the sandbox without importing pydantic.
+    """
+
+    tree = ast.parse(open(_MODELS_PATH, encoding="utf-8").read())
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if (
+                    isinstance(target, ast.Name)
+                    and target.id == "PARAMETER_VERSION"
+                    and isinstance(node.value, ast.Constant)
+                    and isinstance(node.value.value, str)
+                ):
+                    return node.value.value
+    raise AssertionError("PARAMETER_VERSION (module-level string) not found in src/models.py")
+
+
+def _meta_expected_parameter_version() -> str:
+    """Read ``expected_parameter_version`` from rules_meta.yaml without PyYAML."""
+
+    path = os.path.join(RULES_DIR, "rules_meta.yaml")
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            match = re.match(r"^expected_parameter_version:\s*(.+)$", stripped)
+            if match:
+                return match.group(1).strip().strip("\"'")
+    raise AssertionError("expected_parameter_version not found in rules_meta.yaml")
 
 # The canonical 16 ParameterName values (verbatim from T06 / docs/parameters.md).
 # Kept here so the positive gate test does not depend on importing pydantic.
@@ -124,27 +162,70 @@ def test_parameter_version_gate_negative_tampered_names():
     assert "totally_new_param" in message  # extra in the tampered meta
 
 
+def test_rules_meta_version_matches_module_parameter_version():
+    """rules_meta's expected_parameter_version == module PARAMETER_VERSION.
+
+    Both sides are read from source (no pydantic import), so this runs in the
+    sandbox and proves the agreed T06 version marker is wired to the T03 gate.
+    """
+
+    assert _meta_expected_parameter_version() == _module_parameter_version()
+
+
+def test_parameter_version_gate_negative_tampered_version():
+    """A tampered expected_parameter_version raises RuleConfigError (steering)."""
+
+    meta = RulesMeta(
+        rule_set_version="1.0",
+        parameter_contract="x",
+        expected_parameter_names=CANONICAL_PARAMETERS,
+        expected_parameter_version="9.9",  # does not match the live marker
+    )
+    with pytest.raises(RuleConfigError) as exc:
+        _verify_parameter_version(meta, CANONICAL_PARAMETERS, live_version="1.0")
+    message = str(exc.value)
+    assert "9.9" in message  # the tampered rules_meta value
+    assert "1.0" in message  # the live PARAMETER_VERSION
+
+
+def test_parameter_version_gate_version_check_runs_before_set_check():
+    """The version mismatch is reported even when the name set still matches."""
+
+    meta = RulesMeta(
+        rule_set_version="1.0",
+        parameter_contract="x",
+        expected_parameter_names=CANONICAL_PARAMETERS,
+        expected_parameter_version="2.0",
+    )
+    with pytest.raises(RuleConfigError) as exc:
+        _verify_parameter_version(meta, CANONICAL_PARAMETERS, live_version="1.0")
+    assert "expected_parameter_version" in str(exc.value)
+
+
 def test_load_verifies_against_live_contract_when_available():
     """If src.models exposes ParameterName, the full gate runs against it.
 
-    ParameterName is introduced by T06 (not merged yet). Until then src.models
-    has no ParameterName, so this skips rather than failing: T03 was written and
-    frozen against the canonical 16 names, and the live gate activates
-    automatically once T06 lands.
+    ParameterName and PARAMETER_VERSION are on ``main`` (T06 merged). In the
+    sandbox this still skips because pydantic (and thus ``src.models``) is not
+    importable; locally via ``uv sync --locked`` the live gate runs for real.
     """
 
     pytest.importorskip("pydantic", reason="pydantic is provided by `uv sync --locked`")
     from typing import get_args
 
-    try:
+    try:  # defensive: ParameterName is on main, this guards odd environments
         from src.models import ParameterName
-    except ImportError:
-        pytest.skip("ParameterName not in src.models yet (T06 not merged)")
+    except ImportError:  # pragma: no cover - defensive, ParameterName is on main
+        pytest.skip("src.models not importable (pydantic environment missing)")
+
+    from src.models import PARAMETER_VERSION
 
     live = set(get_args(ParameterName))
     # Our canonical copy must equal the live contract set.
     assert live == set(CANONICAL_PARAMETERS)
-    # And the full load (gate ON) must succeed against the live contract.
+    # rules_meta's version marker must equal the live PARAMETER_VERSION.
+    assert _meta_expected_parameter_version() == PARAMETER_VERSION
+    # And the full load (gate ON, version + set check) must succeed live.
     rule_set = load_rule_set(RULES_DIR)
     assert rule_set.rules
 
@@ -294,17 +375,18 @@ def test_loading_rejects_unknown_outcome():
 
 # ---------------------------------------------------------------------------
 # evaluate_rules - the only pydantic-dependent path (RuleFinding construction).
-# The full engine also needs the live ParameterName (T06) for its gate, so
-# these skip until T06 is merged (pydantic present but ParameterName absent).
+# The full engine also needs the live ParameterName / PARAMETER_VERSION (T06,
+# now on main) for its gate, so these skip only when pydantic is unavailable
+# (sandbox) and run for real locally via `uv sync --locked`.
 # ---------------------------------------------------------------------------
 def _require_live_contract() -> None:
     pytest.importorskip("pydantic", reason="pydantic is provided by `uv sync --locked`")
-    try:
+    try:  # defensive: src.models is on main, this guards odd environments
         import src.models as _models  # noqa: F401
-    except ImportError:  # pragma: no cover - environment dependent
-        pytest.skip("src.models not importable")
-    if not hasattr(_models, "ParameterName"):
-        pytest.skip("ParameterName not in src.models yet (T06 not merged)")
+    except ImportError:  # pragma: no cover - defensive, src.models is on main
+        pytest.skip("src.models not importable (pydantic environment missing)")
+    if not hasattr(_models, "ParameterName"):  # pragma: no cover - defensive
+        pytest.skip("ParameterName not in src.models (unexpected on main)")
 
 
 def test_evaluate_matches_ruleevaluator_protocol():
@@ -382,3 +464,91 @@ def test_findings_have_source_refs_and_valid_outcomes():
         assert isinstance(finding, RuleFinding)
         assert finding.source_refs  # contract already enforces min_length=1
         assert finding.outcome in {"excluded", "conditional", "unknown"}
+
+
+# ---------------------------------------------------------------------------
+# Cross-ticket integration (F4/F5). These exercise the REAL merged contracts:
+# T03 evaluate_rules -> list[RuleFinding] feeds T07 analyze_gaps, and a real
+# T06 ParameterConflict must produce an `unknown` finding, never a clearance.
+# pydantic-guarded so they skip cleanly in the sandbox and run locally.
+# ---------------------------------------------------------------------------
+def test_integration_t03_findings_drive_t07_blocking_question():
+    """End-to-end T03 -> T07: a missing required parameter blocks via T07.
+
+    evaluate_rules emits outcome=="unknown" for a rule whose required parameter
+    is absent; analyze_gaps must turn exactly that finding into a
+    blocking=True ClarificationQuestion. This proves the T03<->T07 contract.
+    """
+
+    _require_live_contract()
+    from src.engine.gaps import analyze_gaps
+    from src.models import ExtractedFact, ExtractionResult
+
+    # target_substance missing => undefined_target_no_spec => unknown finding.
+    extraction = ExtractionResult(
+        stated_facts=[ExtractedFact(parameter="matrix", value="clear liquid", input_quote="x")],
+        assumptions=[],
+        unknowns=["target_substance"],
+    )
+    findings = rules.evaluate_rules(extraction)
+    # T03 side: the unknown finding exists.
+    unknowns_by_id = {f.rule_id: f for f in findings if f.outcome == "unknown"}
+    assert "undefined_target_no_spec" in unknowns_by_id
+
+    # T07 side: analyze_gaps consumes the findings and emits a blocking question
+    # that references the blocking rule by id (T07 only reacts to "unknown").
+    questions = analyze_gaps(extraction, findings)
+    blocking = [q for q in questions if q.blocking]
+    assert blocking, "T07 must raise at least one blocking clarification question"
+    assert any("undefined_target_no_spec" in q.why_it_matters for q in blocking)
+    # Highest priority (rule-blocking) is present.
+    assert any(q.priority == 1 for q in blocking)
+
+
+def test_integration_conflict_parameter_yields_unknown_never_clearance():
+    """A real v1.1 ParameterConflict forces the parameter's rules to unknown.
+
+    Built with the REAL src.models classes so it genuinely tests T06's merged
+    contract: two conflicting matrix facts + an explicit ParameterConflict must
+    make every matrix-requiring rule resolve to `unknown`, never conditional.
+    """
+
+    _require_live_contract()
+    from src.engine.gaps import analyze_gaps
+    from src.models import (
+        ExtractedFact,
+        ExtractionResult,
+        ParameterConflict,
+    )
+
+    extraction = ExtractionResult(
+        stated_facts=[
+            ExtractedFact(parameter="matrix", value="a clear transparent liquid", input_quote="x"),
+            ExtractedFact(parameter="matrix", value="a turbid cloudy broth", input_quote="y"),
+        ],
+        assumptions=[],
+        # A conflicted parameter is also listed in unknowns per the handover.
+        unknowns=["matrix"],
+        conflicts=[
+            ParameterConflict(
+                parameter="matrix",
+                fact_indices=[0, 1],
+                reason="clear vs turbid matrix stated for the same sample",
+            )
+        ],
+    )
+    findings = rules.evaluate_rules(extraction)
+    by_id = {f.rule_id: f for f in findings}
+
+    # The clear-liquid transmission rule requires matrix; with matrix disputed it
+    # must be unknown, never the conditional geometry hint.
+    disputed = by_id["matrix_clear_liquid_transmission_geometry"]
+    assert disputed.outcome == "unknown"
+    # No matrix-requiring rule ever clears/conditions on disputed data.
+    for finding in findings:
+        assert finding.outcome in {"excluded", "conditional", "unknown"}
+    assert all(f.outcome != "approved" for f in findings)
+
+    # And T07 turns the conflict into a blocking question as well.
+    questions = analyze_gaps(extraction, findings)
+    assert any(q.blocking for q in questions)

@@ -75,26 +75,38 @@ Each rule in `method_matrix.yaml` / `compatibility_rules.yaml` is:
 
 ## Parameter-versioning gate
 
-`rules_meta.yaml` carries `expected_parameter_names`: a verbatim copy of the 16
-`ParameterName` literals (see `docs/parameters.md`). On load, the engine checks
+`rules_meta.yaml` carries two fields the gate checks on load:
+
+- `expected_parameter_version` — mirrors the module-level `PARAMETER_VERSION`
+  marker in `src/models.py` (the agreed T06 mechanism).
+- `expected_parameter_names` — a verbatim copy of the 16 `ParameterName`
+  literals (see `docs/parameters.md`).
+
+On load, the engine checks, in order:
 
 ```python
+# 1) version number first (the agreed, explicit T06 mechanism)
+expected_parameter_version == src.models.PARAMETER_VERSION
+# 2) then set equality as the content safeguard
 set(expected_parameter_names) == set(typing.get_args(src.models.ParameterName))
 ```
 
-and raises `RuleConfigError` (a local subclass of `src.errors.AFSError`) listing
-the missing/extra names if the sets differ. This makes a drifted parameter list
-fail fast instead of letting rules match silently into the void.
+Either mismatch raises `RuleConfigError` (a local subclass of
+`src.errors.AFSError`): the version check reports both version strings, the set
+check lists the missing/extra names. Keeping both catches a version bump without
+a set change *and* a silent set drift without a version bump, so the rules can
+never match silently into the void.
 
-**Interface note for T06 (Jakob):** a dedicated `PARAMETER_VERSION` marker next
-to `ParameterName` in `src/models.py` (analogous to `extraction_version`) would
-let T03 check against a version *number* instead of set equality. T03 does not
-change `models.py` itself.
+**Interface note for T06 (Jakob): implemented.** The dedicated
+`PARAMETER_VERSION` marker next to `ParameterName` in `src/models.py` is on
+`main`, and T03 now checks against that version *number* (plus set equality).
+T03 does not change `models.py` itself.
 
 ## T06 additive fields
 
 The engine reads only `parameter`, `value` and `unknowns` from the extraction.
 T06's additive fields (`ExtractedFact.numeric_value`,
-`ExtractionResult.conflicts`) are read **optionally** (getattr-safe) and are
-never required, because T06 is not merged yet. A required parameter that appears
-in `conflicts` is treated as `unknown` ("scope disputed").
+`ExtractionResult.conflicts`, now on `main`) are read **optionally**
+(getattr-safe) and are never required. A required parameter that appears in
+`conflicts` (or in `unknowns`) is treated as `unknown` ("scope disputed"),
+never a clearance.

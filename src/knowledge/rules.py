@@ -15,9 +15,11 @@ Design notes
   contract :class:`~src.models.RuleFinding` needs pydantic (via ``src.models``),
   so that single step is the only one that requires the full environment.
 * **Parameter-version gate (T03 steering core).** ``load_rules`` verifies that
-  ``rules_meta.yaml``'s ``expected_parameter_names`` equals the live
-  ``ParameterName`` set and raises :class:`RuleConfigError` otherwise, so rules
-  can never match silently against a drifted parameter list.
+  ``rules_meta.yaml``'s ``expected_parameter_version`` equals the live
+  ``src.models.PARAMETER_VERSION`` (the agreed T06 mechanism) and, as a second
+  content safeguard, that ``expected_parameter_names`` equals the live
+  ``ParameterName`` set. Either mismatch raises :class:`RuleConfigError`, so
+  rules can never match silently against a drifted parameter list.
 * **Missing data never clears.** ``evaluate_rules`` checks a rule's ``requires``
   first: any required parameter that is missing (or disputed via the optional
   T06 ``conflicts`` field) yields ``outcome="unknown"``, never a positive result.
@@ -98,6 +100,7 @@ class RulesMeta:
     rule_set_version: str
     parameter_contract: str
     expected_parameter_names: tuple[str, ...]
+    expected_parameter_version: str = ""
 
 
 @dataclass(frozen=True)
@@ -400,7 +403,9 @@ def _expected_parameter_names() -> tuple[str, ...]:
     """The live ParameterName literal set from the shared contract.
 
     Imported lazily so pure-logic paths do not force a pydantic import at
-    module load. Raises RuleConfigError if the contract cannot be imported.
+    module load. ParameterName lives on ``main`` (T06 merged); the ImportError
+    branch is purely defensive for environments where ``src.models`` (pydantic)
+    cannot be imported. Raises RuleConfigError in that case.
     """
 
     try:
@@ -412,7 +417,51 @@ def _expected_parameter_names() -> tuple[str, ...]:
     return tuple(get_args(ParameterName))
 
 
-def _verify_parameter_version(meta: RulesMeta, live_names: tuple[str, ...]) -> None:
+def _live_parameter_version() -> str:
+    """The module-level ``PARAMETER_VERSION`` marker from the shared contract.
+
+    Imported lazily (same pattern as :func:`_expected_parameter_names`) so the
+    pure-logic paths need no pydantic. ``PARAMETER_VERSION`` lives on ``main``
+    (T06 merged); the ImportError branch is purely defensive.
+    """
+
+    try:
+        from src.models import PARAMETER_VERSION  # type: ignore
+    except Exception as exc:  # pragma: no cover - environment dependent
+        raise RuleConfigError(
+            "Cannot import PARAMETER_VERSION from src.models to run the "
+            f"parameter-version gate: {exc}."
+        ) from exc
+    return str(PARAMETER_VERSION)
+
+
+def _verify_parameter_version(
+    meta: RulesMeta,
+    live_names: tuple[str, ...],
+    live_version: str | None = None,
+) -> None:
+    """Two-step parameter-version gate.
+
+    1. **Version number first** (the agreed T06 mechanism): if ``live_version``
+       is supplied, ``meta.expected_parameter_version`` must equal
+       ``src.models.PARAMETER_VERSION``. This is the cheap, explicit check Jakob
+       added ``PARAMETER_VERSION`` for.
+    2. **Set equality second** (content safeguard): ``expected_parameter_names``
+       must equal the live ``ParameterName`` set. This still catches a silent
+       set drift even if the version number was not bumped (and vice versa).
+
+    Each failure mode raises :class:`RuleConfigError` with a distinct message.
+    """
+
+    if live_version is not None and meta.expected_parameter_version != live_version:
+        raise RuleConfigError(
+            "rules_meta.yaml expected_parameter_version "
+            f"{meta.expected_parameter_version!r} does not match "
+            f"src.models.PARAMETER_VERSION {live_version!r}. "
+            "Bump rules_meta (and re-check expected_parameter_names) when the "
+            "ParameterName contract changes."
+        )
+
     expected = set(meta.expected_parameter_names)
     live = set(live_names)
     if expected == live:
@@ -501,6 +550,7 @@ def parse_meta(data: dict[str, Any]) -> RulesMeta:
         rule_set_version=str(data.get("rule_set_version", "")).strip(),
         parameter_contract=str(data.get("parameter_contract", "")).strip(),
         expected_parameter_names=names,
+        expected_parameter_version=str(data.get("expected_parameter_version", "")).strip(),
     )
 
 
@@ -512,9 +562,12 @@ def load_rule_set(
     """Load and validate the declarative rule set.
 
     Steps: parse ``rules_meta.yaml`` + the rule files, run the
-    parameter-version gate (``verify_parameter_version``), confirm every
-    referenced parameter is a ``ParameterName`` and every source_ref matches the
-    catalog. Raises :class:`RuleConfigError` on any inconsistency.
+    parameter-version gate (``verify_parameter_version``) which checks
+    ``expected_parameter_version`` against ``src.models.PARAMETER_VERSION`` and
+    then ``expected_parameter_names`` against the live ``ParameterName`` set,
+    confirm every referenced parameter is a ``ParameterName`` and every
+    source_ref matches the catalog. Raises :class:`RuleConfigError` on any
+    inconsistency.
 
     ``verify_parameter_version=False`` skips only the live-contract comparison
     (useful when pydantic/``src.models`` is unavailable) but still validates the
@@ -549,7 +602,8 @@ def load_rule_set(
 
     if verify_parameter_version:
         live_names = _expected_parameter_names()
-        _verify_parameter_version(meta, live_names)
+        live_version = _live_parameter_version()
+        _verify_parameter_version(meta, live_names, live_version)
         _validate_parameters(ordered, live_names)
     else:
         # Structural self-consistency: rules must reference meta's own names.
