@@ -4,7 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 from src.config import PROJECT_ROOT
 from src.engine.service import analyze
-from src.errors import ComponentNotReadyError
+from src.errors import ComponentNotReadyError, RetrievalError
 from src.knowledge.retrieval import retrieve
 from src.state import PipelineState
 
@@ -12,7 +12,9 @@ from src.state import PipelineState
 def test_public_stubs_do_not_fabricate_results():
     with pytest.raises(ComponentNotReadyError, match="T06-T11"):
         analyze("Synthetic new request")
-    with pytest.raises(ComponentNotReadyError, match="T02-T04"):
+    # T04 is implemented: per docs/contracts.md a retrieve() run against a
+    # missing/broken index raises RetrievalError (no index is built here).
+    with pytest.raises(RetrievalError):
         retrieve("Synthetic retrieval query")
 
 

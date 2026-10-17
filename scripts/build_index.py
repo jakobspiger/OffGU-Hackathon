@@ -10,7 +10,7 @@ Defaults come from ``Settings()`` (``afs_source_dir`` / ``afs_index_dir``);
 explicit CLI arguments override them. The S02 notes path is resolved relative
 to ``src.config.PROJECT_ROOT``.
 
-Writes four artifacts into ``--out``:
+Writes into ``--out``:
     * evidence.jsonl          - technical/business evidence (S01-S04 text, S02
                                 notes, XLSX, S05/S06). One JSON object per line.
     * reference_records.jsonl - BRIEF + DOCX as ReferenceRecord, kept SEPARATE
@@ -18,8 +18,23 @@ Writes four artifacts into ``--out``:
                                 dev_reference.jsonl).
     * catalog.json            - the source catalogue, present and missing files.
     * manifest.json           - UTC timestamp, source files with sizes + sha256
-                                hashes, library versions, record counts.
-                                No secrets.
+                                hashes, library versions, record counts,
+                                retrieval mode + embedding model name. No secrets.
+    * embedding_meta.json      - retrieval mode and (vector mode only) embedding
+                                model + vector dimension + UTC timestamp. No
+                                secrets, no key.
+    * embeddings.jsonl         - ONLY in vector mode: one ``{evidence_id,
+                                vector}`` line per Evidence, embedded via the
+                                configured OpenAI-compatible /embeddings endpoint.
+
+T04 retrieval mode (auto-switch, no silent fallback)
+----------------------------------------------------
+The build is **lexical** by default. It becomes **vector** only when
+``Settings().afs_embedding_model`` is set (non-empty): then each Evidence text
+is embedded once and ``embeddings.jsonl`` is written. With no embedding model
+configured the embedding step is skipped entirely (no API call) and
+``embedding_meta.json`` records ``mode="lexical"``. The T02 artifacts above are
+unchanged in either mode; the embedding outputs are a pure addition.
 
 Every evidence line is self-validated via ``Evidence.model_validate_json``; a
 single failure aborts the build. The script is idempotent (re-running
@@ -50,6 +65,16 @@ if _ROOT not in sys.path:
 from src.config import PROJECT_ROOT, Settings  # noqa: E402
 from src.knowledge import catalog, ingest  # noqa: E402
 from src.knowledge.types import Evidence, to_dict  # noqa: E402
+
+
+def _retrieval_mode(settings: Settings) -> str:
+    """vector when an embedding model is configured, else lexical.
+
+    No silent fallback to an invented model: an empty AFS_EMBEDDING_MODEL keeps
+    the build lexical and skips every embedding API call.
+    """
+
+    return "vector" if settings.afs_embedding_model else "lexical"
 
 S02_NOTES_PATH = PROJECT_ROOT / "data" / "source_notes" / "s02_notes.yaml"
 
@@ -106,7 +131,40 @@ def _validate_evidence_file(path: str) -> int:
     return count
 
 
-def build(materials_dir: str, out_dir: str) -> dict:
+def _build_embeddings(
+    evidence: list, out_dir: str, settings: Settings
+) -> dict:
+    """Vector mode only: embed each Evidence text and persist the vectors.
+
+    Writes ``embeddings.jsonl`` (one ``{evidence_id, vector}`` line per record)
+    and returns embedding metadata (model, dim) for ``embedding_meta.json`` /
+    ``manifest.json``. Never writes the API key. Called only when the retrieval
+    mode is ``vector``.
+    """
+
+    from src.knowledge.embedding import embed_texts
+
+    texts = [rec.text for rec in evidence]
+    vectors = embed_texts(texts, settings) if texts else []
+    embeddings_path = os.path.join(out_dir, "embeddings.jsonl")
+    with open(embeddings_path, "w", encoding="utf-8") as fh:
+        for rec, vector in zip(evidence, vectors):
+            fh.write(
+                json.dumps(
+                    {"evidence_id": rec.evidence_id, "vector": vector},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+            fh.write("\n")
+    dim = len(vectors[0]) if vectors else 0
+    _log(f"embedded {len(vectors)} evidence text(s), dim={dim} -> embeddings.jsonl")
+    return {"model": settings.afs_embedding_model, "dim": dim}
+
+
+def build(materials_dir: str, out_dir: str, settings: Settings | None = None) -> dict:
+    if settings is None:
+        settings = Settings()
     os.makedirs(out_dir, exist_ok=True)
 
     # 1. Catalogue (present vs. missing).
@@ -200,6 +258,22 @@ def build(materials_dir: str, out_dir: str) -> dict:
     validated = _validate_evidence_file(evidence_path)
     _log(f"self-validated {validated} evidence line(s) against the contract")
 
+    # --- T04 embedding index (additive; pure lexical unless a model is set). ---
+    mode = _retrieval_mode(settings)
+    embedding_info: dict = {"model": settings.afs_embedding_model, "dim": 0}
+    if mode == "vector":
+        embedding_info = _build_embeddings(evidence, out_dir, settings)
+    else:
+        _log("retrieval mode lexical: no embedding model set, skipping embeddings.jsonl")
+    embedding_meta = {
+        "mode": mode,
+        "model": embedding_info["model"],
+        "dim": embedding_info["dim"],
+        "built_at_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+    }
+    with open(os.path.join(out_dir, "embedding_meta.json"), "w", encoding="utf-8") as fh:
+        json.dump(embedding_meta, fh, ensure_ascii=False, indent=2, sort_keys=True)
+
     with open(catalog_path, "w", encoding="utf-8") as fh:
         json.dump(
             [to_dict(e) for e in entries],
@@ -227,6 +301,8 @@ def build(materials_dir: str, out_dir: str) -> dict:
         "built_at_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "materials_dir": materials_dir,
         "out_dir": out_dir,
+        "retrieval_mode": mode,
+        "embedding_model": settings.afs_embedding_model,
         "library_versions": _lib_versions(),
         "counts": {
             "evidence": len(evidence),
@@ -266,7 +342,7 @@ def main(argv: list[str] | None = None) -> int:
         _log(f"ERROR: materials dir not found: {args.materials}")
         return 2
 
-    build(args.materials, args.out)
+    build(args.materials, args.out, settings)
     return 0
 
 
