@@ -22,7 +22,7 @@ but do not fail the run, because exact extraction wording is model-dependent.
 
 import sys
 from dataclasses import dataclass
-from typing import Callable
+from collections.abc import Callable
 
 from src.config import Settings
 from src.engine.extraction import extract

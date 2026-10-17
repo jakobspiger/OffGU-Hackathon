@@ -139,7 +139,7 @@ def _cosine(a: list[float], b: list[float]) -> float:
     dot = 0.0
     norm_a = 0.0
     norm_b = 0.0
-    for x, y in zip(a, b):
+    for x, y in zip(a, b, strict=True):
         dot += x * y
         norm_a += x * x
         norm_b += y * y
@@ -231,7 +231,7 @@ def reset_cache() -> None:
 
 def _read_jsonl(path: str) -> list[dict]:
     rows: list[dict] = []
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         for lineno, line in enumerate(fh, start=1):
             if not line.strip():
                 continue
@@ -260,7 +260,7 @@ def _load_index(settings: Any) -> _IndexCache:
         )
 
     records: list[Any] = []
-    with open(evidence_path, "r", encoding="utf-8") as fh:
+    with open(evidence_path, encoding="utf-8") as fh:
         for lineno, line in enumerate(fh, start=1):
             if not line.strip():
                 continue

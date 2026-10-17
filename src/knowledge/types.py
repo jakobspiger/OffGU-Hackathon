@@ -18,7 +18,7 @@ before any record is constructed. Output always carries the contract values
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from src.models import (
@@ -29,7 +29,7 @@ from src.models import (
 )
 
 
-class SourceKind(str, Enum):
+class SourceKind(StrEnum):
     """Historical T02 kinds, kept as an internal migration aid only.
 
     These values never appear in output. They are translated to the shared
