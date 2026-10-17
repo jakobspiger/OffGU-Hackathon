@@ -11,7 +11,8 @@ Mode (auto-switch, no silent fallback to an invented model)
     * **vector** when ``afs_embedding_model`` is set (non-empty) AND an
       embeddings index (``embeddings.jsonl``) exists next to ``evidence.jsonl``.
       The query is embedded once per call and scored by cosine similarity
-      against the stored evidence vectors.
+      against the stored evidence vectors. Qwen3 embedding models receive the
+      official query instruction prefix; stored page vectors stay unprefixed.
     * **lexical** otherwise (the real default: no embedding model is enabled on
       the configured endpoint). A deterministic, unicode-/case-robust token
       score over the evidence text is used. No network, no key.
@@ -44,7 +45,7 @@ import unicodedata
 from typing import TYPE_CHECKING, Any
 
 from src.errors import RetrievalError
-from src.knowledge.embedding import embed_texts
+from src.knowledge.embedding import embed_texts, format_embedding_query
 
 if TYPE_CHECKING:  # pragma: no cover - type-checker import only
     from src.models import Evidence
@@ -320,7 +321,10 @@ def retrieve(query: str, k: int = 8) -> list["Evidence"]:
 
     query_vector: list[float] | None = None
     if index.mode == "vector" and index.vectors_by_id:
-        query_vector = embed_texts([query], settings)[0]
+        query_vector = embed_texts(
+            [format_embedding_query(query, settings.afs_embedding_model)],
+            settings,
+        )[0]
 
     top = _rank_hits(
         query,

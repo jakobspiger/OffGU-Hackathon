@@ -58,8 +58,8 @@ Jeder Evidenz-Datensatz trägt die gemeinsamen Vertragsfelder aus `src/models.py
 
 Der Modus wird automatisch aus der Konfiguration abgeleitet, ohne stillen Wechsel auf ein erfundenes Modell:
 
-- **lexikalisch (Default):** `AFS_EMBEDDING_MODEL` ist leer. Ein deterministischer, unicode- und case-robuster Token-Score (NFC + Casefold + Whitespace-Normalisierung analog V-2) läuft über den Evidenz-Text. Kein Netz, kein API-Key. Das ist der reale Default, weil am konfigurierten OpenAI-kompatiblen Endpunkt derzeit **kein** `/embeddings`-Modell freigeschaltet ist.
-- **hybrid/vektor:** `AFS_EMBEDDING_MODEL` ist gesetzt **und** `data/index/embeddings.jsonl` existiert neben `evidence.jsonl`. Dann wird die Query einmalig über den Endpunkt eingebettet und per Kosinus-Ähnlichkeit (reines Python) gegen die gespeicherten Evidenz-Vektoren verglichen.
+- **lexikalisch (Default):** `AFS_EMBEDDING_MODEL` ist leer. Ein deterministischer, unicode- und case-robuster Token-Score (NFC + Casefold + Whitespace-Normalisierung analog V-2) läuft über den Evidenz-Text. Kein Netz, kein API-Key.
+- **hybrid/vektor:** `AFS_EMBEDDING_MODEL` ist gesetzt **und** `data/index/embeddings.jsonl` existiert neben `evidence.jsonl`. Dann wird die Query einmalig über den Endpunkt eingebettet und per Kosinus-Ähnlichkeit (reines Python) gegen die gespeicherten Evidenz-Vektoren verglichen. Vorgesehenes Modell: `qwen3-embedding-4b`. Dessen Anfrage bekommt das offizielle Präfix `Instruct: …\nQuery:…`; die Evidenzseiten werden ohne Präfix eingebettet.
 
 ### Quellenrang: business_context wird abgewertet, nicht gefiltert
 
@@ -69,7 +69,7 @@ In **beiden** Modi wird `purpose="business_context"` (S05 Flyer, S06 Link) im Ra
 
 Der Vektor-Modus nutzt einen OpenAI-kompatiblen `/embeddings`-Endpunkt (gleiches httpx-Muster wie der Chat-Provider; der Key wird nie geloggt). Relevante Umgebungsvariablen (`.env`):
 
-- `AFS_EMBEDDING_MODEL` — Embedding-Modellname. Leer = lexikalisch (Default).
+- `AFS_EMBEDDING_MODEL` — Embedding-Modellname. Leer = lexikalisch (Default). Für den Vektor-Index: `qwen3-embedding-4b`.
 - `OPENAI_BASE_URL` — Basis-URL des OpenAI-kompatiblen Endpunkts (ohne Zugangsdaten/Query/Fragment).
 - `OPENAI_API_KEY` — API-Key, nur im Vektor-Modus nötig.
 

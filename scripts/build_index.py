@@ -145,7 +145,9 @@ def _build_embeddings(
     from src.knowledge.embedding import embed_texts
 
     texts = [rec.text for rec in evidence]
-    vectors = embed_texts(texts, settings) if texts else []
+    # Pages are embedded as plain text. Eight at a time stays inside the
+    # request timeout for qwen3-embedding-4b; the query prefix is not applied.
+    vectors = embed_texts(texts, settings, batch_size=8) if texts else []
     embeddings_path = os.path.join(out_dir, "embeddings.jsonl")
     with open(embeddings_path, "w", encoding="utf-8") as fh:
         for rec, vector in zip(evidence, vectors):

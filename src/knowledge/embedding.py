@@ -32,6 +32,29 @@ if TYPE_CHECKING:  # pragma: no cover - import guard for type checkers only
     from src.config import Settings
 
 
+# Qwen3-Embedding is instruction-aware: the query carries a one-sentence English
+# task, documents do not. Form is the official ``Instruct`` / ``Query`` prefix
+# from https://github.com/QwenLM/Qwen3-Embedding (no space after ``Query:``).
+_QWEN_QUERY_TASK = (
+    "Given a customer enquiry about process spectroscopy, "
+    "retrieve relevant source passages that answer the enquiry"
+)
+
+
+def format_embedding_query(query: str, model: str | None) -> str:
+    """Return the text that should be embedded for a retrieval query.
+
+    Qwen3 embedding models get ``Instruct: {task}\\nQuery:{query}``. Every
+    other model, including the lexical-disabled test double, gets ``query``
+    unchanged. Evidence pages are never passed through this function.
+    """
+
+    name = (model or "").casefold()
+    if "qwen" in name and "embed" in name:
+        return f"Instruct: {_QWEN_QUERY_TASK}\nQuery:{query}"
+    return query
+
+
 def _require_embedding_config(settings: "Settings") -> tuple[str, str, str]:
     """Return ``(base, model, key)`` or raise a sanitized RetrievalError.
 
@@ -56,6 +79,7 @@ def embed_texts(
     settings: "Settings",
     *,
     transport: "httpx.BaseTransport | None" = None,
+    batch_size: int | None = None,
 ) -> list[list[float]]:
     """Embed ``texts`` via an OpenAI-compatible ``/embeddings`` endpoint.
 
@@ -73,6 +97,19 @@ def embed_texts(
         raise RetrievalError("embed_texts expects a list of strings.")
     if not texts:
         return []
+    if batch_size is not None and batch_size < 1:
+        raise RetrievalError("embed_texts batch_size must be a positive integer.")
+    if batch_size is not None and len(texts) > batch_size:
+        vectors: list[list[float]] = []
+        for start in range(0, len(texts), batch_size):
+            vectors.extend(
+                embed_texts(
+                    texts[start : start + batch_size],
+                    settings,
+                    transport=transport,
+                )
+            )
+        return vectors
 
     base, model, key = _require_embedding_config(settings)
     payload = {"model": model, "input": texts}
@@ -131,4 +168,4 @@ def _parse_embeddings(response: "httpx.Response", *, expected: int) -> list[list
     return vectors
 
 
-__all__ = ["embed_texts"]
+__all__ = ["embed_texts", "format_embedding_query"]

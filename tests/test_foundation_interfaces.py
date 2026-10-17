@@ -9,11 +9,20 @@ from src.knowledge.retrieval import retrieve
 from src.state import PipelineState
 
 
-def test_public_stubs_do_not_fabricate_results():
+def test_public_stubs_do_not_fabricate_results(tmp_path, monkeypatch):
     with pytest.raises(ComponentNotReadyError, match="T06-T11"):
         analyze("Synthetic new request")
-    # T04 is implemented: per docs/contracts.md a retrieve() run against a
-    # missing/broken index raises RetrievalError (no index is built here).
+    # T04 is implemented: a retrieve() against a missing index raises
+    # RetrievalError. Point at an empty directory so a local data/index
+    # built for qwen3-embedding-4b cannot satisfy the call.
+    from src.config import Settings
+    from src.knowledge.retrieval import reset_cache
+
+    missing = tmp_path / "no-index"
+    missing.mkdir()
+    isolated = Settings(_env_file=None, afs_index_dir=missing)
+    monkeypatch.setattr("src.config.Settings", lambda *a, **kw: isolated)
+    reset_cache()
     with pytest.raises(RetrievalError):
         retrieve("Synthetic retrieval query")
 

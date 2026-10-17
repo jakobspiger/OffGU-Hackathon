@@ -44,7 +44,7 @@ Für T01 sind keine Einstellungen erforderlich. Für spätere Live-Analyse `.env
 | `AFS_RETRIEVAL_K` | 1–50 Treffer, Standard 8 |
 | `AFS_SOURCE_DIR` | Quellordner, Standard `materials` |
 | `AFS_INDEX_DIR` | Lokaler Index, Standard `data/index` |
-| `AFS_EMBEDDING_MODEL` | In T04 festzulegender Embedding-Modellname |
+| `AFS_EMBEDDING_MODEL` | Leer = lexikalisch. Vektor-Index: `qwen3-embedding-4b` |
 
 Diese Konfiguration ist ein Vertrag, noch kein implementierter Provider-/Retrieval-Client. Tests und Startbildschirm funktionieren ohne Schlüssel. Relative Pfade beziehen sich auf die Projektwurzel. Umgebungsvariablen überschreiben `.env`. Unbekannte Schlüssel in `.env` werden abgelehnt; beliebige zusätzliche Betriebssystemvariablen werden nicht geprüft.
 

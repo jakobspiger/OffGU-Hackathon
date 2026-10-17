@@ -359,6 +359,51 @@ def test_retrieve_matches_retriever_protocol(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # Library-dependent: vector mode via a mocked httpx transport (no network).
 # ---------------------------------------------------------------------------
+def test_qwen_embedding_query_uses_official_instruction_prefix():
+    from src.knowledge.embedding import format_embedding_query
+
+    wrapped = format_embedding_query("whey and milk", "qwen3-embedding-4b")
+    assert wrapped == (
+        "Instruct: Given a customer enquiry about process spectroscopy, "
+        "retrieve relevant source passages that answer the enquiry\n"
+        "Query:whey and milk"
+    )
+    assert format_embedding_query("whey and milk", "test-embed") == "whey and milk"
+    assert format_embedding_query("whey and milk", None) == "whey and milk"
+
+
+def test_embed_texts_batches_without_reordering(tmp_path):
+    httpx = pytest.importorskip("httpx")
+    pytest.importorskip("pydantic_settings")
+    from src.config import Settings
+    from src.knowledge.embedding import embed_texts
+
+    calls = []
+
+    def handler(request):
+        body = json.loads(request.content)
+        calls.append(body["input"])
+        data = [
+            {"index": i, "embedding": [float(len(text))]} for i, text in enumerate(body["input"])
+        ]
+        return httpx.Response(200, json={"data": data})
+
+    settings = Settings(
+        _env_file=None,
+        afs_embedding_model="qwen3-embedding-4b",
+        openai_api_key="secret-key",
+        openai_base_url="https://example.test/v1",
+    )
+    out = embed_texts(
+        ["aa", "bbb", "c"],
+        settings,
+        transport=httpx.MockTransport(handler),
+        batch_size=2,
+    )
+    assert calls == [["aa", "bbb"], ["c"]]
+    assert out == [[2.0], [3.0], [1.0]]
+
+
 def test_embed_texts_uses_mock_transport(tmp_path, monkeypatch):
     httpx = pytest.importorskip("httpx")
     pytest.importorskip("pydantic_settings")
@@ -426,8 +471,11 @@ def test_vector_mode_uses_embeddings_via_mock_transport(tmp_path, monkeypatch):
             fh.write(json.dumps({"evidence_id": rec.evidence_id, "vector": stored[rec.evidence_id]}))
             fh.write("\n")
 
+    captured = {}
+
     # Query embeds to the S04 direction.
     def handler(request):
+        captured["input"] = json.loads(request.content)["input"]
         return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.0, 1.0, 0.0]}]})
 
     # _real_settings already monkeypatched src.config.Settings to an
@@ -438,7 +486,7 @@ def test_vector_mode_uses_embeddings_via_mock_transport(tmp_path, monkeypatch):
     patched = RealSettings(
         _env_file=None,
         afs_index_dir=index_dir,
-        afs_embedding_model="test-embed",
+        afs_embedding_model="qwen3-embedding-4b",
         openai_api_key="secret-key",
     )
     monkeypatch.setattr("src.config.Settings", lambda *a, **kw: patched)
@@ -455,6 +503,11 @@ def test_vector_mode_uses_embeddings_via_mock_transport(tmp_path, monkeypatch):
     from src.knowledge.retrieval import retrieve
 
     results = retrieve("petroleum in water", 4)
+    assert captured["input"] == [
+        "Instruct: Given a customer enquiry about process spectroscopy, "
+        "retrieve relevant source passages that answer the enquiry\n"
+        "Query:petroleum in water"
+    ]
     # vector winner is S04 (query vector aligned with S04's stored vector)
     assert results[0].evidence_id == "S04-p004"
     assert all(r.score is not None for r in results)
