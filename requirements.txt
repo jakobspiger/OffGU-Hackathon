@@ -1,0 +1,9 @@
+# T02 — AFS source ingestion dependencies (pinned).
+# NOTE: In the current sandbox PyPI is blocked, so these cannot be installed
+# here; the real index build runs locally on the maintainer's machine via
+#   pip install -r requirements.txt && python scripts/build_index.py
+# The pytest suite is designed to run WITHOUT these libraries (see tests/).
+pymupdf==1.24.10
+python-docx==1.1.2
+openpyxl==3.1.5
+pydantic==2.9.2

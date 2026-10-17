@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets / local config
+.env
+
+# Local AFS source material (redistribution rights unclear — keep local only)
+data/source/
+
+# Built index artifacts (reproducible via scripts/build_index.py)
+data/index/

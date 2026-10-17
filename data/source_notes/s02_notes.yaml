@@ -1,0 +1,83 @@
+# Hand-verified notes for the image-heavy S02 slides.
+#
+# WHY THIS FILE EXISTS
+#   S02_AFS_Process_Control_Slides.pdf is almost entirely images (917 image
+#   refs across 20 slides). PDF text extraction returns little more than slide
+#   titles, so we cannot rely on automatic extraction for these slides.
+#
+# SOURCE OF THE CONTENT
+#   Every note below is derived ONLY from the official AFS source catalogue in
+#   AFS_Examples_and_Reference.docx (section 4), which states exactly what the
+#   key slides cover:
+#     - fiber types and transmission ranges .......... p.6-10
+#     - water in petroleum ........................... p.13
+#     - API in polymer extrusion ..................... p.14
+#     - combined probes .............................. p.15-16
+#   No slide measurements, concentrations, accuracies or product codes are
+#   invented here. The fiber transmission ranges are those transcribed in the
+#   DOCX fiber-family table, which itself flags "S02 p.6 is a figure; check the
+#   figure before relying on an exact number".
+#
+# TODO (maintainer, local):
+#   PyMuPDF / a vision-capable pass could not run in the authoring sandbox
+#   (PyPI blocked). Kevin must do a FINAL VISUAL CHECK of the rendered slides
+#   6 and 13-16 against these notes before relying on them, and correct any
+#   wording that the slide images contradict. Until then each note is marked
+#   as a reviewed transcription from the source catalogue, not a verbatim read
+#   of the slide image.
+
+meta:
+  source_id: S02
+  kind: verified_note
+  provenance: "reviewed transcription from AFS source catalogue (DOCX section 4); pending final visual check of rendered slides"
+  needs_visual_check: true
+
+notes:
+  - page: 6
+    title: "Fiber types and transmission ranges"
+    text: >-
+      Slide introducing the fiber families that determine which wavelengths
+      reach the probe. The source catalogue transcribes the following
+      approximate transmission ranges from this figure (check the figure before
+      relying on an exact number): standard and Al/Cu-coated UV-Vis silica
+      fibers 190-1200 nm; standard and Al/Cu-coated Vis-NIR silica fibers
+      350-2400 nm; chalcogenide As-S IR fibers (CIR) 1.1-6.5 um; polycrystalline
+      infrared fibers (PIR) 3-17 um; hollow glass waveguides (HWG) 2-18 um;
+      indium fluoride fibers 0.3-5.5 um; zirconium fluoride fibers 0.3-4.5 um.
+      The fiber determines the usable range of a given probe; a nominal method
+      range is not the usable range of a specific fiber or probe.
+
+  - page: 13
+    title: "Application: water content in a petroleum stream"
+    text: >-
+      Process-control application slide covering water content measurement in a
+      petroleum stream. Used by the source catalogue as a lead for MIR (ATR) on
+      liquids. The usable range is limited by fiber and crystal; contact,
+      fouling and compatibility must be confirmed. No concentration, accuracy or
+      detection-limit figures are stated.
+
+  - page: 14
+    title: "Application: API in hot polymer extrusion"
+    text: >-
+      Process-control application slide covering active-pharmaceutical-ingredient
+      (API) composition monitoring during hot polymer extrusion. Used by the
+      source catalogue as an MIR (ATR) lead. The hot interface may foul; probe
+      type, installation and optical configuration need AFS confirmation. No
+      composition or performance figures are stated.
+
+  - page: 15
+    title: "Combined probes (1)"
+    text: >-
+      Slide on combined probes that sample the same spot with more than one
+      method. A combination (for example MIR ATR + fluorescence, or NIR +
+      Raman) is only worthwhile where complementary information is plausible,
+      and the added value over the best single method is a hypothesis to test.
+      Sampling location and timing must be aligned.
+
+  - page: 16
+    title: "Combined probes (2)"
+    text: >-
+      Continuation of the combined-probe application, covering layout and
+      integration of multi-method probes. Probe type, installation and optical
+      configuration need AFS confirmation; only the ranges confirmed for the
+      actual components apply.
