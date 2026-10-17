@@ -21,6 +21,4 @@ if _ROOT not in sys.path:
 # pydantic is not installed in the sandbox.
 MATERIALS_DIR = os.path.join(_ROOT, "materials")
 S02_NOTES_PATH = os.path.join(_ROOT, "data", "source_notes", "s02_notes.yaml")
-H_SCENARIOS_PATH = os.path.join(
-    _ROOT, "materials", "customer_scenarios_for_final_evaluation.txt"
-)
+H_SCENARIOS_PATH = os.path.join(_ROOT, "materials", "customer_scenarios_for_final_evaluation.txt")

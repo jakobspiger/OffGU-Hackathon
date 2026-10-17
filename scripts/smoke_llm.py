@@ -75,8 +75,7 @@ def check_contradiction_is_flagged(result: ExtractionResult) -> list[str]:
     temps = [f for f in result.stated_facts if f.parameter == "temperature"]
     if len(temps) < 2:
         failures.append(
-            "expected both temperature statements to be kept as separate facts "
-            f"(got {len(temps)})"
+            f"expected both temperature statements to be kept as separate facts (got {len(temps)})"
         )
     if not any(c.parameter == "temperature" for c in result.conflicts):
         failures.append("contradictory temperatures were not flagged as a conflict")

@@ -12,9 +12,7 @@ class ChatJSONProvider:
         self.settings = settings
         self.transport = transport
 
-    def _post(
-        self, base: str, messages: list[dict], *, json_mode: bool
-    ) -> httpx.Response:
+    def _post(self, base: str, messages: list[dict], *, json_mode: bool) -> httpx.Response:
         settings = self.settings
         assert settings.openai_api_key is not None
         payload: dict = {"model": settings.openai_model, "messages": messages}
