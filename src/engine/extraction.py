@@ -85,8 +85,35 @@ def scalar_value(parameter: ParameterName, value: str) -> NumericValue | None:
         return None
 
 
+def _extract_json_object(raw: str) -> str:
+    """Return the JSON object from a provider reply.
+
+    When the endpoint lacks a native JSON mode the model may wrap the object in
+    a Markdown code fence or add surrounding prose. This strips a leading
+    ```json fence and, failing that, isolates the outermost {...} span. Parsing
+    and schema validation still happen downstream, so this never relaxes the
+    contract -- it only tolerates non-JSON-mode formatting.
+    """
+    text = raw.strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.S | re.I)
+    if fence:
+        text = fence.group(1).strip()
+    if text.startswith("{") and text.endswith("}"):
+        return text
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end > start:
+        return text[start : end + 1]
+    return text
+
+
 def validate_draft(raw: str, query: str) -> ExtractionResult:
-    draft = ExtractionDraft.model_validate_json(raw)
+    try:
+        draft = ExtractionDraft.model_validate_json(raw)
+    except ValueError:
+        # Non-JSON-mode endpoints may fence or wrap the JSON; retry once on the
+        # isolated object. A genuinely invalid payload still raises here.
+        draft = ExtractionDraft.model_validate_json(_extract_json_object(raw))
     haystack = _normalize_for_quote_check(query)
     facts = []
     for fact in draft.stated_facts:

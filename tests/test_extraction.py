@@ -230,3 +230,21 @@ def test_extra_provider_fields_rejected(settings):
     raw["accuracy"] = "99%"
     with pytest.raises(ExtractionError):
         extract("Hallo", provider=FakeProvider(json.dumps(raw)), settings=settings)
+
+
+def test_fenced_json_from_non_json_mode_endpoint_is_accepted(settings):
+    # Endpoints without native JSON mode may wrap the object in a code fence.
+    fenced = "```json\n" + draft(("matrix", "Pulver", "Pulver")) + "\n```"
+    result = extract("Pulver", provider=FakeProvider(fenced), settings=settings)
+    assert [f.parameter for f in result.stated_facts] == ["matrix"]
+
+
+def test_prose_wrapped_json_is_accepted(settings):
+    wrapped = "Here is the JSON:\n" + draft(("matrix", "Pulver", "Pulver")) + "\nDone."
+    result = extract("Pulver", provider=FakeProvider(wrapped), settings=settings)
+    assert result.stated_facts[0].value == "Pulver"
+
+
+def test_unparseable_response_still_fails(settings):
+    with pytest.raises(ExtractionError):
+        extract("Pulver", provider=FakeProvider("no json here at all"), settings=settings)
