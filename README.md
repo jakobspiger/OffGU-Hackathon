@@ -50,6 +50,38 @@ Das Skript schreibt vier Artefakte in den Ausgabeordner:
 
 Jeder Evidenz-Datensatz trägt die gemeinsamen Vertragsfelder aus `src/models.py`: `evidence_id` (stabile ID, z. B. `S01-p010`, `XLSX-row03`, `S02-note-p13`), `source_id`, `page`, `origin_source_id`, `text`, `kind` (`pdf` / `curated_note` / `table_transcription` / `text`), `purpose` (`technical` / `research` / `business_context`) und `review_status` (`unreviewed` / `pending_visual_check` / `reviewed`). Die S02-Notizen bleiben `pending_visual_check` mit dokumentierter `review_note`, bis Kevin die gerenderten Folien visuell gegengeprüft hat; ein Textpräfix oder Name ist kein Prüfnachweis. BRIEF und DOCX sind keine wissenschaftliche Evidenz und erscheinen nie in `evidence.jsonl`; H01–H06 bleiben vollständig ausgeschlossen.
 
+## Retrieval (T04)
+
+`retrieve(query, k)` aus `src/knowledge/retrieval.py` findet die relevantesten AFS-Passagen und liefert `Evidence`-Objekte mit gesetzter Trefferinformation (`score`), absteigend nach Relevanz sortiert (Gleichstände stabil nach `evidence_id`). Es liest **ausschließlich** `data/index/evidence.jsonl` aus `Settings().afs_index_dir`. Fehlt der Index, wird ein klarer `RetrievalError` geworfen (kein `ComponentNotReadyError`). Der geladene Index wird je Prozess gecacht; `reset_cache()` leert ihn (für Tests).
+
+### Hybrid mit Auto-Umschaltung
+
+Der Modus wird automatisch aus der Konfiguration abgeleitet, ohne stillen Wechsel auf ein erfundenes Modell:
+
+- **lexikalisch (Default):** `AFS_EMBEDDING_MODEL` ist leer. Ein deterministischer, unicode- und case-robuster Token-Score (NFC + Casefold + Whitespace-Normalisierung analog V-2) läuft über den Evidenz-Text. Kein Netz, kein API-Key. Das ist der reale Default, weil am konfigurierten OpenAI-kompatiblen Endpunkt derzeit **kein** `/embeddings`-Modell freigeschaltet ist.
+- **hybrid/vektor:** `AFS_EMBEDDING_MODEL` ist gesetzt **und** `data/index/embeddings.jsonl` existiert neben `evidence.jsonl`. Dann wird die Query einmalig über den Endpunkt eingebettet und per Kosinus-Ähnlichkeit (reines Python) gegen die gespeicherten Evidenz-Vektoren verglichen.
+
+### Quellenrang: business_context wird abgewertet, nicht gefiltert
+
+In **beiden** Modi wird `purpose="business_context"` (S05 Flyer, S06 Link) im Ranking abgewertet (kleines, aber positives Gewicht). Diese Treffer bleiben als Kontext zitierbar, gelten aber **nie** als technischer Leistungsbeleg: technische und Research-Evidenz liegen im Rang immer davor. S06 behält `page=None` (keine erfundene PDF-Seite). H01–H06 und Entwicklungsreferenzen (DOCX/`ReferenceRecord`) sind bereits durch den T02-Build strukturell aus `evidence.jsonl` ausgeschlossen und können daher nie auftauchen.
+
+### Embedding-Konfiguration
+
+Der Vektor-Modus nutzt einen OpenAI-kompatiblen `/embeddings`-Endpunkt (gleiches httpx-Muster wie der Chat-Provider; der Key wird nie geloggt). Relevante Umgebungsvariablen (`.env`):
+
+- `AFS_EMBEDDING_MODEL` — Embedding-Modellname. Leer = lexikalisch (Default).
+- `OPENAI_BASE_URL` — Basis-URL des OpenAI-kompatiblen Endpunkts (ohne Zugangsdaten/Query/Fragment).
+- `OPENAI_API_KEY` — API-Key, nur im Vektor-Modus nötig.
+
+### Index bauen und Grenzen
+
+```powershell
+uv sync --locked
+uv run python scripts/build_index.py
+```
+
+Der Build ist additiv zum T02-Bau: Ist ein Embedding-Modell gesetzt, bettet er jeden Evidenz-Text einmal ein und schreibt `data/index/embeddings.jsonl` (`{evidence_id, vector}`) plus `embedding_meta.json` (Modus, Modell, Dimension, UTC — **keine** Secrets). Ohne Embedding-Modell wird kein API-Call gemacht, keine `embeddings.jsonl` geschrieben, und `embedding_meta.json` vermerkt `mode="lexical"`. `manifest.json` trägt zusätzlich `retrieval_mode` und den Embedding-Modellnamen (ohne Key). Grenze: Ohne freigeschalteten Embedding-Endpunkt bleibt es beim lexikalischen Modus; die Retrieval-Tests mocken den Embedding-Transport und brauchen **keinen** Key.
+
 ## Geplantes Ergebnis
 
 - Genannte Fakten, Annahmen und unbekannte Angaben getrennt darstellen.
