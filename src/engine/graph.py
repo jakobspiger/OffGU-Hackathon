@@ -64,8 +64,8 @@ from src.config import Settings
 from src.engine.extraction import extraction_node
 from src.engine.gaps import gaps_node
 from src.engine.synthesis import synthesis_node
-from src.knowledge.rules import evaluate_rules
 from src.knowledge.retrieval import retrieve
+from src.knowledge.rules import evaluate_rules
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from src.models import ValidationReport
@@ -161,6 +161,15 @@ def gate_node(state: dict) -> dict:
 
     Sobald T10s Validator landet, wird er hier aufgerufen und schreibt die
     ValidationReport; :func:`should_revise` konsumiert dann ``has_errors``.
+
+    WICHTIG fuer T10 (Seam-Robustheit der Schleife): Die Korrekturschleife fuehrt
+    die Rueckkante synthesis -> experiment -> gate bei jedem Durchlauf erneut aus.
+    Der zukuenftige Validator MUSS den aktuellen Entwurf bei JEDEM Gate-Durchlauf
+    neu validieren und eine FRISCHE ``ValidationReport`` nach ``state['validation']``
+    schreiben. Wird stattdessen ein veralteter Report aus einem frueheren Durchlauf
+    weitergereicht, bewertet :func:`should_revise` den alten statt den
+    nachgebesserten Entwurf, und die Schleife laeuft nur noch gegen den
+    Zaehler (``MAX_REVISIONS``) statt gegen den tatsaechlichen Validierungsstand.
     """
 
     draft = state.get("draft")
@@ -238,6 +247,11 @@ def should_revise(state: dict) -> str:
     Die Korrekturschleife springt nur dann zur Synthese zurueck, wenn eine
     ValidationReport Fehler meldet UND die Obergrenze noch nicht erreicht ist.
     Ohne Validator (Default) oder ohne Fehler endet der Graph sofort.
+
+    Hinweis (T10-Seam): ``state['validation']`` muss vom kuenftigen Validator bei
+    jedem Gate-Durchlauf neu geschrieben werden (siehe :func:`gate_node`), sonst
+    liest diese Funktion einen veralteten Report und bewertet nicht den
+    nachgebesserten Entwurf.
     """
 
     report: ValidationReport | None = state.get("validation")

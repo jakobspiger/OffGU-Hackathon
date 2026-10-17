@@ -147,14 +147,25 @@ nicht ausimplementiert:
   unverändert als `state["result"]` durch (Pass-through) und terminiert nach einem
   Lauf. Sobald T10 landet, wird der Validator in `gate_node` eingehängt; die
   Schleife konsumiert dann `ValidationReport.has_errors`. Die Struktur
-  (`should_revise`, `_failure_result`) ist dafür bereits vorbereitet.
+  (`should_revise`, `_failure_result`) ist dafür bereits vorbereitet. Weil heute
+  kein Knoten `state["validation"]` schreibt, sind Korrekturschleife und
+  definiertes Fehlerergebnis strukturell vorhanden, aber in Produktion noch nicht
+  scharf geschaltet (nur Unit-Tests üben sie direkt aus). Zwingend für T10: Der
+  Validator muss den Entwurf bei JEDEM Gate-Durchlauf neu validieren und eine
+  frische `ValidationReport` schreiben, sonst liest `should_revise` einen
+  veralteten Report und bewertet nicht den nachgebesserten Entwurf.
 - T09 B6 Versuchsplan (`src/engine/experiment.py`, Jakob): Noch nicht
   implementiert. `AnalysisResult` trägt heute schon `feasibility_plan` und
   `go_no_go_criteria` aus der Synthese, daher ist noch kein eigener
   Experiment-Knoten nötig. `experiment_node` ist ein markierter Platzhalter
   (Pass-through), in den T09 später einsteigt.
 - T05 Few-Shot-Beispiele (`examples`): Nicht implementiert; das State-Feld bleibt
-  optional und leer, die Synthese akzeptiert den leeren Pfad.
+  optional und leer, die Synthese akzeptiert den leeren Pfad. Das Feld wird heute
+  von keinem Knoten gelesen oder geschrieben, ist also noch an keinem Knoten
+  eingebunden. Der Teil "Beispiele" des Abnahmekriteriums "Regel-Matrix,
+  Retrieval und Beispiele ... eingebunden" wird erst live, sobald T05 das Feld an
+  einem Knoten verdrahtet; Regel-Matrix (`rules_node`) und Retrieval
+  (`retrieval_node`) sind dagegen bereits je an einem Knoten eingebunden.
 
 ### Ausführungsstand der Tests
 
