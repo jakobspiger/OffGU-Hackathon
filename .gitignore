@@ -16,5 +16,11 @@ dist/
 !.env.example
 data/source/
 data/index/
-data/examples/
+# T05 owns the curated few-shot example store: the dev examples and their
+# README are checked in; any other data/examples/ content stays ignored.
+# (Ignore the directory contents, not the directory itself, so the two tracked
+# files can be re-included.)
+data/examples/*
+!data/examples/dev_examples.yaml
+!data/examples/README.md
 outputs/local/

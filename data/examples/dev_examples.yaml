@@ -1,0 +1,244 @@
+# Few-shot development examples D01-D08 (T05).
+#
+# WHAT THIS FILE IS
+#   Eight curated development scenarios (D01-D08) for calibrating the TONE and
+#   STRUCTURE of the assistant's answers. The scenario text (`query`) is taken
+#   verbatim from AFS_Examples_and_Reference.docx section 1; the two worked
+#   reference answers (`reference_answer`, D01/D02 only) are taken verbatim from
+#   section 2 of the same document.
+#
+# WHAT THIS FILE IS NOT
+#   These are NOT citable technical evidence. The D01/D02 worked answers are a
+#   structure/tone template prepared by the organizers, not independent proof of
+#   any method's performance. They must never be cited as evidence. Citable
+#   technical evidence lives separately in data/index/ (evidence.jsonl); this
+#   store is never read by the retrieval path and never mixed into it.
+#
+# RULES
+#   - Only D01 and D02 have a reference_answer. D03-D08 have none (null); no
+#     answer is invented for them.
+#   - example_id is restricted to D01-D08 (contract regex ^D0[1-8]$). The final
+#     evaluation scenarios H01-H06 are deliberately excluded here and nowhere
+#     appear in this file.
+#   - No invented facts, numbers, performance figures or sources. Scenario and
+#     answer text stay faithful to the DOCX.
+#
+# See data/examples/README.md for purpose, limits and the handover to T09/T11.
+
+examples:
+  - example_id: D01
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario; \u00a72 worked example \u2014 development reference, not independent evidence"
+    query: |
+      Blend potency in a tablet press feed frame. We manufacture tablets from a
+      powder blend containing an active pharmaceutical ingredient and
+      excipients. Laboratory checks tell us whether the blend is on target, but
+      results arrive after the material has moved through the press. We want to
+      assess whether a fiber based measurement in the feed frame could follow
+      API concentration changes. Our first pilot should compare reasonable
+      measurement options before we commit to production equipment.
+      Facts stated: Powder blend; API concentration is the requested variable;
+      Feed frame measurement is preferred; Independent laboratory checks already
+      exist.
+      Useful sources: S01 p.5, 10, 11, 14-15
+    reference_answer: |
+      Decision status: Provisional feasibility assessment.
+      Requirements stated: Powder blend with API and excipients; API
+      concentration is the target; measurement in the feed frame is preferred;
+      independent laboratory checks exist; the pilot should compare options
+      before buying equipment.
+      Key unknowns: API and excipients, concentration range, acceptance limits,
+      required response time, reference assay uncertainty, access and cleaning
+      conditions.
+      Clarification questions:
+      Which API, excipients and concentration range are involved, and which
+      changes must be distinguished?
+      Which assay, uncertainty and sampling time provide the reference
+      concentrations?
+      Which formulation, particle and operating changes occur between runs?
+      What response time, acceptance limits, access and cleaning conditions
+      apply?
+      Recommendation:
+      NIR (diffuse reflection). The supplied pharmaceutical example supports NIR
+      reflection for blend concentration in powders [S01 p.14-15]. A
+      matrix-specific calibration must be built and tested [S01 p.10].
+      Raman. The same application family supports Raman as a comparison
+      candidate [S01 p.14-15]. Check fluorescence background and signal quality
+      [S01 p.11].
+      NIR + Raman. Consider only after each method has been assessed on its own.
+      Whether the combination adds value for this formulation is a hypothesis to
+      test [S01 p.14-15].
+      Measurement concept: A powder interface for each candidate in the feed
+      frame, for example a diffuse reflection probe for NIR and a Raman probe
+      [S01 Table 1 (p.6)]. A combined probe could sample the same spot, but
+      probe type, installation and optical configuration need AFS confirmation.
+      Spectral range: NIR has a nominal method range of 780-2500 nm [S01 p.10];
+      specify only the usable range of the selected system. For Raman, state the
+      excitation wavelength separately from the Raman shift. Do not pick an
+      optimal band without sample spectra.
+      Risks and uncertainty:
+      A change of API or excipients can invalidate a calibration.
+      Physical variation of the powder (particle size, density, flow) changes
+      the signal.
+      A combination of methods does not guarantee a gain for every formulation.
+      No accuracy, update rate or equipment compatibility has been confirmed.
+      First feasibility experiment:
+      Prepare representative blends across the client-agreed API range and the
+      relevant physical variation.
+      Record spectra from each candidate together with independent API reference
+      assays and timing information.
+      Build single-method models first, then a combined model; validate on
+      held-out runs or batches.
+      Compare prediction error, bias and the ability to follow changes against
+      the client's requirements.
+      Decision basis: Agree numerical acceptance criteria with the client before
+      the test. Choose the simplest configuration that meets them on independent
+      material.
+      Sources: S01 p.6, 10, 11, 14-15.
+
+  - example_id: D02
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario; \u00a72 worked example \u2014 development reference, not independent evidence"
+    query: |
+      Fat and protein monitoring in opaque dairy product. We produce an opaque,
+      concentrated milk product that flows through a processing line. We
+      currently sample it for fat and protein analysis and would like earlier
+      information about composition changes. Product temperature and texture
+      vary during production. We want an initial spectroscopy concept and a
+      practical comparison experiment, while retaining our laboratory checks.
+      Facts stated: Opaque concentrated dairy product; Fat and protein are the
+      requested variables; Flowing process; Temperature and texture vary;
+      Laboratory checks remain available.
+      Useful sources: S01 p.5, 10, 17, 18
+    reference_answer: |
+      Decision status: Provisional feasibility assessment.
+      Requirements stated: Opaque concentrated milk product in a flowing line;
+      fat and protein are the targets; temperature and texture vary; laboratory
+      checks remain available.
+      Key unknowns: Product types and composition ranges, required accuracy and
+      delay, installation point, cleaning regime.
+      Clarification questions:
+      Which product types, composition ranges and reference assays are involved?
+      How do temperature, texture, homogenisation state and air bubbles vary?
+      Can an optical interface see a representative sample and be kept clean?
+      What accuracy, delay, installation and cleaning limits apply?
+      Recommendation:
+      NIR (diffuse reflection). The supplied dairy example supports NIR
+      reflection for opaque or concentrated products [S01 p.17]. Consider
+      another geometry only if the measured optical behaviour justifies it
+      [S01 p.18].
+      Measurement concept: Test a reflection interface on representative
+      laboratory samples before specifying the process installation
+      [S01 Table 1 (p.6)]. Confirm contact geometry, fouling control and
+      cleaning with AFS and the client.
+      Spectral range: 780-2500 nm is the general NIR range [S01 p.10], not a
+      required full coverage. Check which bands the instrument and fiber
+      actually cover, then inspect the sample spectra.
+      Risks and uncertainty:
+      Temperature, texture and scattering changes can mimic composition changes
+      [S01 p.17].
+      Fat and protein each need their own independent reference results.
+      A reflection spectrum is not yet a fat or protein calibration.
+      Interface ratings, signal stability and achievable errors are unknown.
+      First feasibility experiment:
+      Collect representative samples with independent fat and protein results
+      across production variation.
+      Compare suitable optical geometries, first under controlled and then under
+      realistic conditions.
+      Separate the effect of physical changes (temperature, texture) from
+      composition.
+      Validate on independent production runs against client-agreed error and
+      maintenance requirements.
+      Decision basis: Composition error and bias on independent production runs,
+      together with maintenance and response needs. The acceptance targets come
+      from the client; none is invented here.
+      Sources: S01 p.6, 10, 17, 18.
+
+  - example_id: D03
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario"
+    query: |
+      A clear whey stream before concentration. Our dairy process includes a
+      relatively clear whey stream before a concentration stage. We want to
+      investigate whether spectroscopy can track protein concentration as the
+      stream changes, with laboratory results used as the reference. The stream
+      can become more turbid under some operating conditions. We need a first
+      measurement concept that handles this change rather than assuming the
+      liquid always remains clear.
+      Facts stated: Whey stream; Protein concentration requested; Initially
+      relatively clear; Turbidity may change; Laboratory reference results
+      available.
+      Useful sources: S01 p.5, 10, 17, 18
+    reference_answer: null
+
+  - example_id: D04
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario"
+    query: |
+      Glucose and lactate trends in an aqueous bioprocess. We run a cell culture
+      process in an aqueous medium. Glucose and lactate are measured from
+      samples, and the delay makes it difficult to see changes promptly. We are
+      exploring an in situ spectroscopy pilot that can be checked against those
+      existing laboratory measurements. The medium and cell population change
+      during the run; we have not yet selected a probe or a calibration
+      strategy.
+      Facts stated: Aqueous cell culture; Glucose and lactate requested; Medium
+      and cells change during the run; Laboratory reference measurements exist.
+      Useful sources: S01 p.5, 10, 11, 16
+    reference_answer: null
+
+  - example_id: D05
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario"
+    query: |
+      Biomass related monitoring during yeast fermentation. We would like an
+      optical measurement during yeast fermentation to help us follow growth and
+      notice changes earlier. Our team has mentioned both a biomass signal and a
+      metabolic signal, but these have not been defined as separate targets. The
+      broth becomes more optically dense as the run develops. We need help
+      turning this request into an initial feasibility study with useful
+      reference measurements.
+      Facts stated: Yeast fermentation; Growth and metabolic changes mentioned;
+      Optical density changes; Target variables still need definition.
+      Useful sources: S01 p.5, 16
+    reference_answer: null
+
+  - example_id: D06
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario"
+    query: |
+      Water content in a petroleum stream. We handle a petroleum stream and
+      currently send samples to a laboratory for water determination. We want to
+      investigate a fiber based measurement closer to the process so that
+      changes can be noticed sooner. The analyzer would be outside the process
+      area. Before selecting equipment, we need to know what to clarify and what
+      a first comparison experiment should establish.
+      Facts stated: Petroleum stream; Water content requested; Independent
+      laboratory water measurement exists; Analyzer outside the process area.
+      Useful sources: S01 p.6, 9, 10; S02 p.6, 13
+    reference_answer: null
+
+  - example_id: D07
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario"
+    query: |
+      API concentration during hot polymer extrusion. We are developing a hot
+      polymer extrusion process that incorporates an active pharmaceutical
+      ingredient. We want to investigate whether an optical measurement can
+      detect composition changes while the melt is being processed. We have
+      offline assays, but the process interface is hot and may be exposed to
+      material build up. We need an initial comparison plan and the questions
+      required before choosing a probe.
+      Facts stated: Hot polymer melt; API composition changes requested; Offline
+      assays available; Interface may foul.
+      Useful sources: S01 p.5, 6, 10; S02 p.14
+    reference_answer: null
+
+  - example_id: D08
+    provenance: "AFS_Examples_and_Reference.docx \u00a71 development scenario"
+    query: |
+      Local measurements of heterogeneous model tissues. Our research group is
+      evaluating a spectral measurement interface using model biological tissues
+      such as chicken muscle, fat and liver. We want to compare MIR ATR and
+      fluorescence information, because the material is heterogeneous and
+      sequential measurements may not sample the same location. This is a
+      laboratory classification study. We need a first comparison experiment and
+      a clear statement of what its results would demonstrate.
+      Facts stated: Laboratory model tissues; Chicken muscle, fat and liver are
+      examples; Heterogeneous sample; Compare measurements from the same local
+      area; No clinical use requested.
+      Useful sources: S01 p.5, 6, 8-10; S04 p.1, 3, 4
+    reference_answer: null
