@@ -67,6 +67,7 @@ def _meta_expected_parameter_version() -> str:
                 return match.group(1).strip().strip("\"'")
     raise AssertionError("expected_parameter_version not found in rules_meta.yaml")
 
+
 # The canonical 16 ParameterName values (verbatim from T06 / docs/parameters.md).
 # Kept here so the positive gate test does not depend on importing pydantic.
 CANONICAL_PARAMETERS = (
