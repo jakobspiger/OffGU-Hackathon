@@ -19,3 +19,15 @@ class RetrievalError(AFSError):
 
 class AnalysisError(AFSError):
     """Provider or pipeline failed; not a scientific decision status."""
+
+
+class ExtractionError(AnalysisError):
+    """No valid grounded extraction could be obtained."""
+
+
+class ProviderError(AnalysisError):
+    """A sanitized provider failure; response bodies and credentials are omitted."""
+
+    def __init__(self, message: str, *, retryable: bool = False):
+        super().__init__(message)
+        self.retryable = retryable

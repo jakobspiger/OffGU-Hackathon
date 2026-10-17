@@ -97,16 +97,44 @@ class ReferenceRecord(ContractModel):
     page: Annotated[int, Field(ge=1)] | None = None
 
 
+class NumericValue(ContractModel):
+    """Only an exact scalar with an explicit supported unit; no conversion."""
+
+    magnitude: Annotated[float, Field(allow_inf_nan=False)]
+    unit: Literal["°C", "K", "bar(a)", "bar(g)", "s", "ms"]
+
+
 class ExtractedFact(ContractModel):
     parameter: ParameterName
     value: Text
     input_quote: Text
+    numeric_value: NumericValue | None = None
+
+
+class ParameterConflict(ContractModel):
+    parameter: ParameterName
+    fact_indices: Annotated[list[Annotated[int, Field(ge=0)]], Field(min_length=2)]
+    reason: Text
 
 
 class ExtractionResult(ContractModel):
     stated_facts: list[ExtractedFact]
     assumptions: list[Text]
     unknowns: list[Text]
+    extraction_version: Literal["1.1"] = "1.1"
+    conflicts: list[ParameterConflict] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def check_conflict_references(self) -> Self:
+        for conflict in self.conflicts:
+            if len(set(conflict.fact_indices)) != len(conflict.fact_indices):
+                raise ValueError("Conflict references must be distinct.")
+            for index in conflict.fact_indices:
+                if index >= len(self.stated_facts):
+                    raise ValueError("Conflict refers to a missing fact.")
+                if self.stated_facts[index].parameter != conflict.parameter:
+                    raise ValueError("Conflict parameter does not match its facts.")
+        return self
 
     def verify_quotes(self, query: str) -> None:
         """B2 calls this against the original request before handing data to B3."""
