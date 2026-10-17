@@ -28,6 +28,10 @@ ParameterName = Literal[
     "reference_method",
     "process_constraints",
 ]
+# Bump whenever the ParameterName set changes so dependent components (e.g. the
+# T03 rule-set gate) can check a version instead of set equality. Keep in sync
+# with the ParameterName literal above.
+PARAMETER_VERSION = "1.0"
 
 
 class ContractModel(BaseModel):
