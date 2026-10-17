@@ -2,6 +2,8 @@
 
 Implementierung: `src/models.py`, `src/contracts.py`, `src/state.py`.
 
+T06-Schritt 1 konkretisiert `ExtractedFact.parameter` als `ParameterName` statt freiem Text. Die verbindliche Liste und ihre Bedeutung stehen in [parameters.md](parameters.md); Erzeuger und Regeln müssen diese Schlüssel verwenden.
+
 Für den bereits parallel entstandenen T02-Branch gilt die konkrete [Migrationsanleitung](t02-handover.md). Die hier dokumentierte Version 1.0 ist der erste veröffentlichte Vertrag; der frühere lokale Entwurf war noch nicht veröffentlicht.
 
 ## Öffentliche Aufrufe
@@ -24,7 +26,7 @@ Später gilt: Ein erfolgreicher Retrieval-Lauf ohne Treffer liefert `[]`; ein fe
 - **Evidence:** ergänzt stabile `evidence_id`, `text`, `kind`, `purpose` und optionalen endlichen `score`. Kevin bestimmt die stabile ID-Generierung in T02, beispielsweise aus Quellversion, Seite und Chunk. Kuratierte Bildnotizen sind `curated_note`, keine angeblich wörtliche PDF-Extraktion.
 - **Herkunft und Prüfung:** `origin_source_id` hält das Ursprungsdokument fest. Tabellen-Transkriptionen aus XLSX zitieren S01 S. 6 und haben `kind="table_transcription"`. `review_status` unterscheidet `unreviewed`, `pending_visual_check` und `reviewed`; letzteres erfordert `review_note`. Diese Kennzeichnung ersetzt keine tatsächliche Prüfung.
 - **SourceCatalogEntry / ReferenceRecord:** Das Inventar darf zusätzlich BRIEF, XLSX und DOCX enthalten. BRIEF-/DOCX-Passagen sind separate ReferenceRecords, keine zitierfähige wissenschaftliche Evidence. Das gemeinsame Modell vermeidet doppelte Typdefinitionen in der Wissensbasis.
-- **ExtractionResult:** typisierte Fakten mit Parameter, Wert und Originalzitat; Annahmen und Unbekanntes in getrennten Listen. B2 ruft `verify_quotes(query)` gegen die unveränderte Eingabe auf. Ein passendes Zitat allein beweist noch keine korrekte Interpretation.
+- **ExtractionResult:** typisierte Fakten mit Parameter, Wert und Originalzitat; Annahmen und Unbekanntes in getrennten Listen. B2 ruft `verify_quotes(query)` gegen die unveränderte Eingabe auf. Ein passendes Zitat allein beweist noch keine korrekte Interpretation. Mit `extraction_version="1.1"` (T06-Schritt 2) ergänzt um `ExtractedFact.numeric_value` (optionaler exakter Skalar mit Einheit) und `conflicts` (explizit markierte Widersprüche); `unknowns` führt fehlende und konflikt-behaftete Parameter mit ihrem `ParameterName`. Details und Regelfolgen für T03 in [t06-handover-an-kevin.md](t06-handover-an-kevin.md). `verify_quotes` toleriert reine Darstellungsunterschiede (V-2, Issue #3), ohne den Halluzinationsschutz aufzuweichen.
 - **ClarificationQuestion:** Frage, Begründung, positive Priorität (1 = höchste) und `blocking`. B3 sortiert die Ausgabe aufsteigend; gleiche Prioritäten sind erlaubt.
 - **RuleFinding:** Regel-ID, Ergebnis `excluded / conditional / unknown`, Grund und Quellen. `unknown` ist keine Freigabe.
 - **ValidationFinding:** Code, Schweregrad `error / warning / not_checked`, Nachricht, Feldpfad und Evidenz-IDs. `ValidationReport.has_errors` berechnet, ob mindestens ein Fehler vorliegt. Ein fehlerloser Bericht mit `not_checked` ist kein vollständiger Prüfbeleg.
