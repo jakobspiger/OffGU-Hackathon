@@ -1,0 +1,182 @@
+# Evidenced, GENERAL compatibility / caution rules (T03 analysis section 3c).
+#
+# These are domain rules over ParameterName, NOT scenario hacks: there is no
+# scenario id (no H0x / D0x), no customer name and no scenario-specific
+# branching anywhere. Each rule carries a stable rule_id, AND-combined `when`
+# over ParameterName, the parameters it `requires`, an outcome in
+# {excluded, conditional, unknown}, a reason, and at least one SourceReference
+# with a real catalog page.
+#
+# Predicates operate on the raw quote text (`value`) of a stated fact,
+# case-insensitively. No numeric comparison is ever performed. Outcomes are
+# deliberately limited to excluded / conditional / unknown: there is no
+# "approved" outcome, and a missing required parameter yields "unknown", never
+# a positive clearance (that gate lives in the engine, not in the YAML).
+rules:
+  # 1. NIR calibration does not transfer automatically to a new formulation.
+  - rule_id: calib_transfer_new_formulation
+    when:
+      - parameter: existing_equipment
+        predicate: value_contains_any
+        keywords: ["calibration", "calibrated", "model", "kalibr"]
+      - parameter: sample_composition
+        predicate: value_contains_any
+        keywords: ["new", "changed", "different", "reformulat", "neu", "geändert"]
+    requires: [existing_equipment, sample_composition]
+    outcome: conditional
+    reason: >-
+      An existing NIR calibration does not transfer automatically to a new or
+      changed API/excipient formulation; the chemometric model must be
+      re-validated (and likely re-built) for the new composition before use.
+    source_refs:
+      - source_id: S01
+        page: 10
+      - source_id: S01
+        page: 14
+      - source_id: S01
+        page: 15
+
+  # 2. Adding Raman does not rescue an existing calibration by itself.
+  - rule_id: raman_does_not_rescue_calibration
+    when:
+      - parameter: existing_equipment
+        predicate: value_contains_any
+        keywords: ["raman"]
+      - parameter: existing_equipment
+        predicate: value_contains_any
+        keywords: ["calibration", "calibrated", "model", "kalibr"]
+    requires: [existing_equipment]
+    outcome: conditional
+    reason: >-
+      Adding a Raman measurement does not automatically rescue or validate an
+      existing (e.g. NIR) calibration; a combined or new method still needs its
+      own validation against a reference method before it can be relied upon.
+    source_refs:
+      - source_id: S01
+        page: 11
+      - source_id: S01
+        page: 14
+      - source_id: S01
+        page: 16
+
+  # 3. Clear vs. turbid liquid demands a different measurement geometry.
+  - rule_id: clear_vs_turbid_geometry
+    when:
+      - parameter: matrix
+        predicate: value_contains_any
+        keywords: ["turbid", "cloudy", "scattering", "suspension", "trüb", "streuend"]
+    requires: [matrix, measurement_mode]
+    outcome: conditional
+    reason: >-
+      A turbid/scattering liquid changes the usable geometry compared with a
+      clear liquid: straight transmission may not be viable, so a reflection or
+      transflection geometry and the real path length must be verified. The
+      method comparison table's ratings are qualitative, not measured specs.
+    source_refs:
+      - source_id: S01
+        page: 17
+      - source_id: S01
+        page: 18
+      - source_id: S01
+        page: 6
+
+  # 4. Fluorescence sensitivity is not a direct target proof without a marker.
+  - rule_id: fluorescence_without_marker
+    when:
+      - parameter: measurement_mode
+        predicate: value_contains_any
+        keywords: ["fluorescence", "fluoresz"]
+      - parameter: reference_method
+        predicate: parameter_absent
+    requires: [measurement_mode, target_substance]
+    outcome: conditional
+    reason: >-
+      Fluorescence can be highly sensitive, but without a specific fluorophore,
+      label or independent reference it is not a direct proof of the target
+      substance (e.g. glucose or viable biomass). A marker or reference method
+      must be established before relying on a fluorescence signal.
+    source_refs:
+      - source_id: S01
+        page: 5
+      - source_id: S01
+        page: 16
+      - source_id: S04
+        page: 1
+
+  # 5. MIR-ATR on an existing Vis/NIR silica fiber is not cleared without proof.
+  - rule_id: mir_atr_on_vis_nir_fiber
+    when:
+      - parameter: measurement_mode
+        predicate: value_contains_any
+        keywords: ["mir", "mid-ir", "mid ir", "atr"]
+      - parameter: existing_equipment
+        predicate: value_contains_any
+        keywords: ["fiber", "fibre", "silica", "vis", "nir", "faser"]
+    requires: [measurement_mode, existing_equipment]
+    outcome: conditional
+    reason: >-
+      MIR / MIR-ATR cannot be assumed to work on an existing Vis/NIR silica
+      fiber: standard silica fibers do not transmit the mid-IR. This stays
+      conditional and must not be cleared without explicit proof of mid-IR
+      transmission for the actual fiber/probe.
+    source_refs:
+      - source_id: S01
+        page: 6
+      - source_id: S01
+        page: 9
+      - source_id: S02
+        page: 6
+      - source_id: S02
+        page: 13
+
+  # 6. Nominal method range is not the usable fiber/probe range.
+  - rule_id: nominal_range_not_fiber_range
+    when:
+      - parameter: existing_equipment
+        predicate: value_contains_any
+        keywords: ["fiber", "fibre", "probe", "faser", "sonde"]
+    requires: [existing_equipment, measurement_mode]
+    outcome: conditional
+    reason: >-
+      The nominal spectral range of a method (e.g. NIR 780-2500 nm or MIR
+      4000-400 cm^-1) is not the usable range of a concrete fiber or probe. The
+      actual transmission window of the installed fiber/probe must be verified
+      separately; the two ranges are kept explicitly distinct.
+    source_refs:
+      - source_id: S02
+        page: 6
+      - source_id: S01
+        page: 10
+
+  # 7. Undefined target substance => no exact sensor specification (unknown).
+  - rule_id: undefined_target_no_spec
+    when:
+      - parameter: target_substance
+        predicate: parameter_absent
+    requires: [target_substance]
+    outcome: unknown
+    reason: >-
+      Without a defined target substance or contaminant, no exact sensor
+      specification or method clearance can be given. The result is unknown and
+      a clarifying question is needed; nothing is invented to fill the gap.
+    source_refs:
+      - source_id: S01
+        page: 5
+      - source_id: S01
+        page: 6
+
+  # 8. In-vitro proof of concept is not clinical / surgical readiness (excluded).
+  - rule_id: invitro_not_clinical
+    when:
+      - parameter: measurement_location
+        predicate: value_contains_any
+        keywords: ["surgery", "surgical", "intraoperative", "in vivo", "clinical", "op"]
+    requires: [measurement_location]
+    outcome: excluded
+    reason: >-
+      An in-vitro proof of concept on excised or model samples does not
+      demonstrate clinical or intra-operative readiness. A surgical / in-vivo
+      deployment claim is excluded on in-vitro evidence alone.
+    source_refs:
+      - source_id: S03
+        page: 1

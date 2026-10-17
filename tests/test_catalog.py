@@ -54,9 +54,7 @@ def test_allowlist_excludes_h_scenarios_brief_docx_and_qa_schedule():
     assert "BRIEF" not in ingest.INDEXABLE_SOURCES
     assert "DOCX" not in ingest.INDEXABLE_SOURCES
     # The expected indexable set per the migration plan.
-    assert ingest.INDEXABLE_SOURCES == frozenset(
-        {"S01", "S02", "S03", "S04", "S05", "S06", "XLSX"}
-    )
+    assert ingest.INDEXABLE_SOURCES == frozenset({"S01", "S02", "S03", "S04", "S05", "S06", "XLSX"})
 
 
 def test_dev_reference_kind_is_separate():

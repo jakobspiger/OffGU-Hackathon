@@ -48,9 +48,7 @@ from .types import Evidence, ReferenceRecord
 # Allowlist: which source_ids may enter data/index/evidence.jsonl.
 # BRIEF and DOCX are ReferenceRecords and are intentionally NOT here.
 # ---------------------------------------------------------------------------
-INDEXABLE_SOURCES: frozenset[str] = frozenset(
-    {"S01", "S02", "S03", "S04", "S05", "S06", "XLSX"}
-)
+INDEXABLE_SOURCES: frozenset[str] = frozenset({"S01", "S02", "S03", "S04", "S05", "S06", "XLSX"})
 
 # PDF sources ingested page-by-page as plain text (kind="pdf").
 # Keyed by source_id. S01 is primary-technical; S03/S04 are research.
@@ -542,9 +540,7 @@ def ingest_business_context(
             pass
     if s06:
         records.append(
-            make_business_evidence(
-                "S06", f"AFS laboratory website: {url} [business context only]"
-            )
+            make_business_evidence("S06", f"AFS laboratory website: {url} [business context only]")
         )
 
     return records

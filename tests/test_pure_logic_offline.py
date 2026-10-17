@@ -73,9 +73,7 @@ def parses_to_scalar(parameter: str, value: str):
     if not match or match[2] not in units:
         return None
     magnitude = float(match[1])
-    if (match[2] == "K" and magnitude < 0) or (
-        match[2] in ("s", "ms", "bar(a)") and magnitude < 0
-    ):
+    if (match[2] == "K" and magnitude < 0) or (match[2] in ("s", "ms", "bar(a)") and magnitude < 0):
         return None
     if match[2] == "°C" and magnitude < -273.15:
         return None

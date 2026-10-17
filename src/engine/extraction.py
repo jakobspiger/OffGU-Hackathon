@@ -155,8 +155,7 @@ def validate_draft(raw: str, query: str) -> ExtractionResult:
                     parameter=parameter,
                     fact_indices=indices,
                     reason=(
-                        "Multiple distinct statements; "
-                        "their scope must be clarified before rules."
+                        "Multiple distinct statements; their scope must be clarified before rules."
                     ),
                 )
             )
@@ -214,9 +213,7 @@ def extract(
         except ValueError as error:
             # No raw provider response or validation inputs in error messages or logs.
             system = (
-                SYSTEM_PROMPT
-                + json.dumps(ExtractionDraft.model_json_schema())
-                + _retry_hint(error)
+                SYSTEM_PROMPT + json.dumps(ExtractionDraft.model_json_schema()) + _retry_hint(error)
             )
         if attempt < settings.afs_max_retries:
             time.sleep(min(2**attempt, 4))
