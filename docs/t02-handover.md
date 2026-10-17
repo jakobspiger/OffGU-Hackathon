@@ -1,5 +1,9 @@
 # T02 an das gemeinsame T01-Fundament anbinden
 
+## Ergänzung für Kevins T03: verbindliche Parameternamen
+
+Für den anschließenden Regelbau gelten jetzt `ParameterName` aus `src.models` und die [Parametertabelle für T03/T06](parameters.md). Jakob hat diese Namen im ersten T06-Schritt festgelegt. Keine separate Namensliste oder eigenen Synonyme im Regelmodul einführen. Die Tabelle beschreibt auch Einheiten, fehlende Angaben und mehrfach vorkommende Parameter. Diese Ergänzung verändert T02s Ingestion-Vertrag nicht.
+
 Vergleichsbasis: Kevins Branch `T02-afs-quellen-aufbereiten`, Commit `30300fb`.
 T01 enthält die gemeinsame Infrastruktur; Kevins Ingestion wird hier nicht kopiert oder gemergt.
 

@@ -1,5 +1,6 @@
 """Contract v1.0: validated JSON boundaries, not a scientific correctness proof."""
 
+import unicodedata
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -9,6 +10,28 @@ Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 SourceID = Literal["S01", "S02", "S03", "S04", "S05", "S06"]
 CatalogSourceID = Literal["BRIEF", "S01", "S02", "S03", "S04", "S05", "S06", "XLSX", "DOCX"]
 DecisionStatus = Literal["provisional", "insufficient_information", "out_of_scope"]
+ParameterName = Literal[
+    "matrix",
+    "sample_composition",
+    "target_substance",
+    "target_quantity",
+    "target_range",
+    "temperature",
+    "pressure",
+    "flow_conditions",
+    "measurement_location",
+    "measurement_mode",
+    "existing_equipment",
+    "optical_access",
+    "required_accuracy",
+    "required_response_time",
+    "reference_method",
+    "process_constraints",
+]
+# Bump whenever the ParameterName set changes so dependent components (e.g. the
+# T03 rule-set gate) can check a version instead of set equality. Keep in sync
+# with the ParameterName literal above.
+PARAMETER_VERSION = "1.0"
 
 
 class ContractModel(BaseModel):
@@ -79,20 +102,88 @@ class ReferenceRecord(ContractModel):
     page: Annotated[int, Field(ge=1)] | None = None
 
 
+class NumericValue(ContractModel):
+    """Only an exact scalar with an explicit supported unit; no conversion."""
+
+    magnitude: Annotated[float, Field(allow_inf_nan=False)]
+    unit: Literal["°C", "K", "bar(a)", "bar(g)", "s", "ms"]
+
+
 class ExtractedFact(ContractModel):
-    parameter: Text
+    parameter: ParameterName
     value: Text
     input_quote: Text
+    numeric_value: NumericValue | None = None
+
+
+class ParameterConflict(ContractModel):
+    parameter: ParameterName
+    fact_indices: Annotated[list[Annotated[int, Field(ge=0)]], Field(min_length=2)]
+    reason: Text
+
+
+# Quote verification tolerates presentation-only differences (smart quotes,
+# NBSP, dash variants, Unicode form, case) without weakening the hallucination
+# guard: no punctuation stripping, no synonyms, no stemming. input_quote stays
+# stored verbatim; only the comparison in verify_quotes normalizes.
+_QUOTE_TRANSLATION = str.maketrans(
+    {
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u201e": '"',
+        "\u201f": '"',
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201a": "'",
+        "\u2032": "'",
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2011": "-",
+        "\u2212": "-",
+        "\u00a0": " ",
+        "\u202f": " ",
+        "\u2009": " ",
+        "\u200a": " ",
+    }
+)
+
+
+def _normalize_for_quote_check(text: str) -> str:
+    normalized = unicodedata.normalize("NFC", text).translate(_QUOTE_TRANSLATION)
+    return " ".join(normalized.split()).casefold()
 
 
 class ExtractionResult(ContractModel):
     stated_facts: list[ExtractedFact]
     assumptions: list[Text]
     unknowns: list[Text]
+    extraction_version: Literal["1.1"] = "1.1"
+    conflicts: list[ParameterConflict] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def check_conflict_references(self) -> Self:
+        for conflict in self.conflicts:
+            if len(set(conflict.fact_indices)) != len(conflict.fact_indices):
+                raise ValueError("Conflict references must be distinct.")
+            for index in conflict.fact_indices:
+                if index >= len(self.stated_facts):
+                    raise ValueError("Conflict refers to a missing fact.")
+                if self.stated_facts[index].parameter != conflict.parameter:
+                    raise ValueError("Conflict parameter does not match its facts.")
+        return self
 
     def verify_quotes(self, query: str) -> None:
-        """B2 calls this against the original request before handing data to B3."""
-        if any(fact.input_quote not in query for fact in self.stated_facts):
+        """B2 calls this against the original request before handing data to B3.
+
+        The check tolerates presentation-only differences (smart quotes, NBSP,
+        dash/Unicode variants, case) but still rejects any quote whose text is
+        not actually present in the original request.
+        """
+        haystack = _normalize_for_quote_check(query)
+        if any(
+            _normalize_for_quote_check(fact.input_quote) not in haystack
+            for fact in self.stated_facts
+        ):
             raise ValueError("An extracted fact quotes text absent from the original request.")
 
 
