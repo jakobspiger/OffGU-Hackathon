@@ -120,7 +120,10 @@ def validate_draft(raw: str, query: str) -> ExtractionResult:
                 ParameterConflict(
                     parameter=parameter,
                     fact_indices=indices,
-                    reason="Multiple distinct statements; their scope must be clarified before rules.",
+                    reason=(
+                        "Multiple distinct statements; "
+                        "their scope must be clarified before rules."
+                    ),
                 )
             )
     unresolved = {item.parameter for item in result.conflicts}
@@ -158,8 +161,9 @@ def extract(
                 SYSTEM_PROMPT
                 + json.dumps(ExtractionDraft.model_json_schema())
                 + (
-                    "\nPrevious output failed validation. Return schema-valid JSON with exact quotes "
-                    "and valid conflict indices. Do not invent missing information."
+                    "\nPrevious output failed validation. Return schema-valid JSON "
+                    "with exact quotes and valid conflict indices. "
+                    "Do not invent missing information."
                 )
             )
         if attempt < settings.afs_max_retries:
