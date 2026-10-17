@@ -19,6 +19,7 @@ from src.models import (
     ParameterConflict,
     ParameterName,
     Text,
+    _normalize_for_quote_check,
 )
 
 MAX_QUERY_LENGTH = 20000
@@ -86,9 +87,14 @@ def scalar_value(parameter: ParameterName, value: str) -> NumericValue | None:
 
 def validate_draft(raw: str, query: str) -> ExtractionResult:
     draft = ExtractionDraft.model_validate_json(raw)
+    haystack = _normalize_for_quote_check(query)
     facts = []
     for fact in draft.stated_facts:
-        if fact.value != fact.input_quote or fact.input_quote not in query:
+        # value and input_quote must be the same span; presence in the query is
+        # checked with the shared presentation-only normalization so correct
+        # quotes with smart quotes/NBSP/dash variants are not falsely rejected.
+        quote_present = _normalize_for_quote_check(fact.input_quote) in haystack
+        if fact.value != fact.input_quote or not quote_present:
             raise ValueError("Fact value must be an exact original quote.")
         facts.append(
             ExtractedFact(

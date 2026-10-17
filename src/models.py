@@ -1,5 +1,6 @@
 """Contract v1.0: validated JSON boundaries, not a scientific correctness proof."""
 
+import unicodedata
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -117,6 +118,37 @@ class ParameterConflict(ContractModel):
     reason: Text
 
 
+# Quote verification tolerates presentation-only differences (smart quotes,
+# NBSP, dash variants, Unicode form, case) without weakening the hallucination
+# guard: no punctuation stripping, no synonyms, no stemming. input_quote stays
+# stored verbatim; only the comparison in verify_quotes normalizes.
+_QUOTE_TRANSLATION = str.maketrans(
+    {
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u201e": '"',
+        "\u201f": '"',
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201a": "'",
+        "\u2032": "'",
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2011": "-",
+        "\u2212": "-",
+        "\u00a0": " ",
+        "\u202f": " ",
+        "\u2009": " ",
+        "\u200a": " ",
+    }
+)
+
+
+def _normalize_for_quote_check(text: str) -> str:
+    normalized = unicodedata.normalize("NFC", text).translate(_QUOTE_TRANSLATION)
+    return " ".join(normalized.split()).casefold()
+
+
 class ExtractionResult(ContractModel):
     stated_facts: list[ExtractedFact]
     assumptions: list[Text]
@@ -137,8 +169,17 @@ class ExtractionResult(ContractModel):
         return self
 
     def verify_quotes(self, query: str) -> None:
-        """B2 calls this against the original request before handing data to B3."""
-        if any(fact.input_quote not in query for fact in self.stated_facts):
+        """B2 calls this against the original request before handing data to B3.
+
+        The check tolerates presentation-only differences (smart quotes, NBSP,
+        dash/Unicode variants, case) but still rejects any quote whose text is
+        not actually present in the original request.
+        """
+        haystack = _normalize_for_quote_check(query)
+        if any(
+            _normalize_for_quote_check(fact.input_quote) not in haystack
+            for fact in self.stated_facts
+        ):
             raise ValueError("An extracted fact quotes text absent from the original request.")
 
 
