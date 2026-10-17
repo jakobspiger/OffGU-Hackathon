@@ -430,9 +430,12 @@ def test_vector_mode_uses_embeddings_via_mock_transport(tmp_path, monkeypatch):
     def handler(request):
         return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.0, 1.0, 0.0]}]})
 
-    from src.config import Settings
-
-    patched = Settings(
+    # _real_settings already monkeypatched src.config.Settings to an
+    # arg-discarding lambda, so build the key-carrying Settings from the REAL
+    # class (type(settings)) to ensure embed_texts sees the api key and
+    # embedding model, then re-patch with this key-carrying object.
+    RealSettings = type(settings)
+    patched = RealSettings(
         _env_file=None,
         afs_index_dir=index_dir,
         afs_embedding_model="test-embed",
