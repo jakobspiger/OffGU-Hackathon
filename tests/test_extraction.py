@@ -157,6 +157,29 @@ def test_irrelevant_text_marks_parameters_unknown(settings):
     assert len(result.unknowns) == 16
 
 
+def test_quote_retry_names_the_failure_class_without_the_rejected_body(settings):
+    settings.afs_max_retries = 1
+    rejected = draft(("required_accuracy", "1 %", "1 %"))
+    query = "Wir wollen die Konzentration bestimmen. Genauigkeit ist uns wichtig."
+    provider = FakeProvider(
+        rejected,
+        draft(("target_quantity", "Konzentration", "Konzentration")),
+    )
+    result = extract(query, provider=provider, settings=settings)
+    assert result.stated_facts[0].parameter == "target_quantity"
+    retry_system = provider.calls[1][0]
+    assert "failed quote validation" in retry_system
+    assert "identical continuous substring" in retry_system
+    assert "1 %" not in retry_system
+
+
+def test_system_prompt_abstains_from_qualitative_accuracy():
+    from src.engine.extraction import SYSTEM_PROMPT
+
+    assert "Genauigkeit ist uns wichtig" in SYSTEM_PROMPT
+    assert "omit the fact" in SYSTEM_PROMPT
+
+
 def test_invalid_json_is_retried_once_and_corrected(settings):
     settings.afs_max_retries = 1
     provider = FakeProvider("not json", draft(("matrix", "Pulver", "Pulver")))

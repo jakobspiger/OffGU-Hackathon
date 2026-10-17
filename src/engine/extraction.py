@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from typing import Protocol, get_args
 
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from src.config import Settings
 from src.engine.provider import ChatJSONProvider
@@ -50,6 +50,13 @@ Only extract known statements. 'Temperature unknown' is not a temperature value;
 Keep separate process states distinct; do not silently resolve contradictory statements.
 Mark explicit contradictions with parameter, zero-based fact_indices and a short reason.
 Do not invent concentrations, accuracy, equipment performance, composition or units.
+Copy rule: value and input_quote must be the identical continuous substring of the user text,
+character for character. Do not paraphrase, translate, shorten, or repair spelling.
+If you cannot copy a span exactly, omit the fact.
+Abstain: importance of accuracy without a number and unit is not required_accuracy.
+"Genauigkeit ist uns wichtig" yields no required_accuracy fact.
+Do not add %, ppm, ranges, or equipment performance that the user text does not contain.
+The word Konzentration is target_quantity only when that exact word is copied from the user text.
 Parameter semantics:
 matrix=physical/optical sample form; sample_composition=ingredients;
 target_substance=analyte; target_quantity=quantity to measure; target_range=stated target values;
@@ -162,6 +169,28 @@ def validate_draft(raw: str, query: str) -> ExtractionResult:
     return result
 
 
+_QUOTE_FAILURES = {
+    "Fact value must be an exact original quote.",
+    "An extracted fact quotes text absent from the original request.",
+}
+
+
+def _retry_hint(error: ValueError) -> str:
+    """Name the validation class only. Never include the provider body."""
+    if isinstance(error, ValidationError) or str(error) not in _QUOTE_FAILURES:
+        return (
+            "\nPrevious output failed schema validation. Return schema-valid JSON "
+            "with exact quotes and valid conflict indices. "
+            "Do not invent missing information."
+        )
+    return (
+        "\nPrevious output failed quote validation. "
+        "value and input_quote must be the identical continuous substring of the user text. "
+        "If you cannot copy a span exactly, omit that fact. "
+        "Do not invent numbers, units, percentages, ppm, or accuracy."
+    )
+
+
 def extract(
     query: str,
     *,
@@ -182,16 +211,12 @@ def extract(
         except ProviderError as error:
             if not error.retryable:
                 raise
-        except ValueError:
+        except ValueError as error:
             # No raw provider response or validation inputs in error messages or logs.
             system = (
                 SYSTEM_PROMPT
                 + json.dumps(ExtractionDraft.model_json_schema())
-                + (
-                    "\nPrevious output failed validation. Return schema-valid JSON "
-                    "with exact quotes and valid conflict indices. "
-                    "Do not invent missing information."
-                )
+                + _retry_hint(error)
             )
         if attempt < settings.afs_max_retries:
             time.sleep(min(2**attempt, 4))

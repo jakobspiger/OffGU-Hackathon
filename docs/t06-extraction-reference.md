@@ -153,7 +153,8 @@ wenn er umstritten ist. `assumptions` bleibt immer `[]` (bewusst, siehe 10).
 - `ProviderError.retryable=True` und `ValueError` (Validierung) **teilen sich das
   Budget** (`test_retry_budget_shared_by_transport_and_validation_failures`).
 - Nach einem Validierungsfehler wird der System-Prompt um einen
-  Korrektur-Hinweis ergänzt (keine Rohdaten/kein Response-Body im Prompt/Log).
+  Korrektur-Hinweis ergänzt. Der Hinweis nennt nur die Klasse `quote` oder
+  `schema`, nicht die Rohantwort und keine Validierungseingaben.
 - Backoff: `time.sleep(min(2**attempt, 4))` zwischen den Runden (in Tests
   gemonkeypatcht).
 - Alle Runden erschöpft → `ExtractionError`. **Ein API-Fehler wird nie zu einem
